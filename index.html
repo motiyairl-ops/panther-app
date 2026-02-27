@@ -422,20 +422,32 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   </div>
   <div class="upload-box">
 
-    <!-- חלק 1: מאגר קיים ב-Drive -->
+    <!-- כפתור התחברות ל-Drive (מוצג לפני התחברות) -->
+    <div id="driveConnectSection" style="display:none; margin-bottom:18px; text-align:center;">
+      <button onclick="driveLogin()" style="width:100%; padding:12px; background:var(--blue-dark); color:white; border:none; border-radius:10px; font-family:'Rubik',sans-serif; font-size:15px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
+        <svg width="18" height="16" viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
+        התחבר ל-Google Drive
+      </button>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">לטעינת מאגר קיים ושמירה אוטומטית</div>
+    </div>
+
+    <!-- מאגר קיים ב-Drive (מוצג רק כשיש נתונים) -->
     <div id="driveDataBox" style="display:none; margin-bottom:20px; background:#f0faf4; border:1.5px solid #27ae60; border-radius:14px; padding:16px 18px; text-align:right;">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
         <svg width="22" height="20" viewBox="0 0 87.3 78" style="vertical-align:middle;margin-left:6px;"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
         <span style="font-size:15px; font-weight:700; color:#1a7a40;">קיים מאגר ב-Drive</span>
       </div>
-      <div id="driveDataInfo" style="font-size:13px; color:var(--text-muted); margin-bottom:14px;"></div>
+      <div id="driveDataInfo" style="font-size:13px; color:var(--text-muted); margin-bottom:12px;"></div>
       <div style="display:flex; gap:10px; flex-direction:row-reverse;">
         <button onclick="loadFromDrive()" style="flex:1; padding:11px; background:#27ae60; color:white; border:none; border-radius:9px; font-family:'Rubik',sans-serif; font-size:14px; font-weight:700; cursor:pointer;">▶ פתח מאגר קיים</button>
-        <button onclick="document.getElementById('newUploadSection').style.display='block'; this.closest('div').style.display='none';" style="flex:1; padding:11px; background:var(--orange); color:white; border:none; border-radius:9px; font-family:'Rubik',sans-serif; font-size:14px; font-weight:700; cursor:pointer;">⬆ העלה קובץ חדש</button>
+        <button onclick="scrollToUpload()" style="flex:1; padding:11px; background:var(--orange); color:white; border:none; border-radius:9px; font-family:'Rubik',sans-serif; font-size:14px; font-weight:700; cursor:pointer;">⬆ העלה קובץ חדש</button>
       </div>
     </div>
 
-    <!-- חלק 2: העלאת קובץ חדש -->
+    <!-- מפריד -->
+    <div id="uploadDivider" style="display:none; border-top:1.5px solid var(--divider); margin-bottom:18px;"></div>
+
+    <!-- חלק 2: העלאת קובץ חדש (תמיד מוצג) -->
     <div id="newUploadSection">
       <h2 style="margin-bottom:10px;">העלה קובץ ייצוא וואטסאפ</h2>
       <ol style="text-align:right;font-size:14px;color:var(--text-muted);line-height:2;margin-bottom:16px;padding-right:18px;">
@@ -1929,9 +1941,13 @@ function driveLogin() {
 
 function updateDriveBtn(connected) {
   const btn = document.getElementById('btnDrive');
-  if (!btn) return;
-  if (connected) { btn.textContent = '✅ Drive'; btn.classList.add('connected'); }
-  else { btn.textContent = '☁️ Drive'; btn.classList.remove('connected'); }
+  if (btn) {
+    if (connected) { btn.textContent = '✅ Drive'; btn.classList.add('connected'); }
+    else { btn.textContent = '☁️ Drive'; btn.classList.remove('connected'); }
+  }
+  // Hide connect section in upload box if connected
+  const connectSection = document.getElementById('driveConnectSection');
+  if (connectSection && connected) connectSection.style.display = 'none';
 }
 
 // ---- CORE DRIVE REQUESTS ----
@@ -2025,9 +2041,12 @@ function showSmartUpload(lastDate, count) {
   if (!box) return;
   box.style.display = 'block';
   if (infoEl) infoEl.textContent = 'עד תאריך: ' + lastDate;
-  // Hide upload section by default when drive data exists
-  const newUpload = document.getElementById('newUploadSection');
-  if (newUpload) newUpload.style.display = 'none';
+  // Show divider between drive box and upload section
+  const divider = document.getElementById('uploadDivider');
+  if (divider) divider.style.display = 'block';
+  // Hide drive connect button since we're connected
+  const connectSection = document.getElementById('driveConnectSection');
+  if (connectSection) connectSection.style.display = 'none';
 }
 
 async function loadFromDrive() {
@@ -2160,22 +2179,15 @@ window.addEventListener('load', () => {
 });
 
 function showDriveConnectBanner() {
-  // Only show on upload screen
-  const box = document.getElementById('newUploadSection');
-  if (!box || document.getElementById('driveConnectBanner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'driveConnectBanner';
-  banner.style.cssText = 'background:#fff8e1;border:1.5px solid #f39c12;border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:right;display:flex;align-items:center;gap:12px;';
-  banner.innerHTML = `
-    <div style="flex:1;font-size:13px;color:#7d5a00;line-height:1.5;">
-      <strong>💡 חבר את Google Drive</strong><br>
-      כדי לטעון מאגר קיים או לשמור אוטומטית
-    </div>
-    <button onclick="driveLogin();document.getElementById('driveConnectBanner').remove();" 
-      style="padding:9px 16px;background:#f39c12;color:white;border:none;border-radius:8px;font-family:'Rubik',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">
-      התחבר ל-Drive
-    </button>`;
-  box.insertBefore(banner, box.firstChild);
+  // Show the built-in connect section at top of upload box
+  const connectSection = document.getElementById('driveConnectSection');
+  if (connectSection) connectSection.style.display = 'block';
+}
+
+function scrollToUpload() {
+  // Scroll to upload section (smooth)
+  const el = document.getElementById('newUploadSection');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 </script>
