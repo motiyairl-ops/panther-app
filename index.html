@@ -52,7 +52,7 @@ body { font-family:'Rubik',sans-serif; background:var(--bg); color:var(--text); 
 #dashboard { display:none; }
 header { background:var(--blue-dark); color:white; padding:10px 20px 8px; box-shadow:0 2px 16px rgba(0,0,0,0.18); position:sticky; top:0; z-index:100; }
 .header-row1 { display:flex; align-items:center; gap:10px; margin-bottom:7px; }
-.header-row2 { display:flex; align-items:center; gap:8px; }
+.header-row2 { display:flex; align-items:center; gap:8px; justify-content:space-between; }
 .header-title { font-family:'Rubik',sans-serif; font-size:22px; font-weight:700; }
 .header-sub { font-size:11px; opacity:0.55; margin-top:2px; }
 /* CUSTOM CALENDAR PICKER */
@@ -117,11 +117,11 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .sec-badge { font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--bg); color:var(--text-muted); }
 
 /* CALL ROWS */
-.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:center; transition:background 0.15s, border-color 0.15s; cursor:default; }
+.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:start; transition:background 0.15s, border-color 0.15s; cursor:default; }
 .call-row:last-child { border-bottom:none; }
 .call-row:hover { background:#e8f0fa; border-bottom-color:#b8cadf; }
 .call-idx { width:24px; height:24px; background:var(--bg2); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text-muted); flex-shrink:0; }
-.call-loc { font-size:17px; font-weight:700; color:var(--text); margin-bottom:4px; word-break:break-word; }
+.call-loc { font-size:17px; font-weight:700; color:var(--text); margin-bottom:4px; word-break:break-word; overflow-wrap:anywhere; white-space:normal; min-width:0; }
 .call-meta { font-size:14px; color:var(--text-mid); display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-weight:500; }
 .call-meta .hint { font-size:12px; color:var(--text-muted); font-weight:400; opacity:0; transition:opacity 0.15s; }
 .call-row:hover .hint { opacity:1; }
@@ -141,7 +141,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .handler-edit-hint { font-size:11px; color:var(--text-muted); font-weight:400; cursor:default; }
 .btn-assign { font-size:12px; color:var(--blue-mid); font-weight:600; margin-top:4px; cursor:pointer; background:none; border:1.5px dashed var(--bg2); border-radius:5px; padding:3px 10px; font-family:'Rubik',sans-serif; }
 .btn-assign:hover { border-color:var(--orange); color:var(--orange); }
-.btn-add-handler { font-size:13px; font-weight:700; color:white; background:var(--orange); border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; line-height:1; flex-shrink:0; }
+.btn-add-handler { font-size:11px; font-weight:700; color:white; background:var(--orange); border:none; border-radius:10px; padding:3px 8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; line-height:1; flex-shrink:0; white-space:nowrap; }
 .btn-add-handler:hover { background:#d4621a; }
 .btn-chat-view { display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--blue-mid); background:rgba(44,74,110,0.07); border:1px solid rgba(44,74,110,0.15); border-radius:5px; cursor:pointer; font-family:'Rubik',sans-serif; padding:3px 9px; margin-top:5px; font-weight:500; transition:all 0.15s; }
 .btn-chat-view:hover { background:rgba(44,74,110,0.14); color:var(--blue-dark); }
@@ -571,6 +571,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       </div>
     </div>
     <div class="header-row2">
+      <button class="btn-back" onclick="goBack()">← חזור</button>
       <div class="header-dates-desktop" style="display:flex;align-items:center;gap:6px;">
         <div class="datepicker-wrap">
           <button class="datepicker-display" id="btnStart" onclick="toggleCal('start')">📅 —</button>
@@ -583,7 +584,6 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
         </div>
       </div>
       <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצוא</button>
-      <button class="btn-back" onclick="goBack()" style="margin-right:auto;">← חזור</button>
     </div>
   </header>
   <!-- Mobile date bar (visible only on mobile) -->
@@ -1378,7 +1378,7 @@ function callRowHtml(c,i) {
     ? `<div class="handler-name">
         🙋 טיפל בקריאה:
         <button class="handler-edit-btn" onclick="event.stopPropagation();openAssign(${c.index})"><strong>${c.handlerClean}</strong></button>
-        <button class="btn-add-handler" onclick="event.stopPropagation();openAssign(${c.index})" title="הוסף כונן נוסף">+</button>
+        <button class="btn-add-handler" onclick="event.stopPropagation();openAssign(${c.index})" title="הוסף כונן נוסף">+ כונן</button>
         <span class="handler-edit-hint">· לחץ לשינוי</span>
       </div>`
     : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
