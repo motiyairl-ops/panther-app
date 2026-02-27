@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לוח בקרה – יחידת פנתר ידידים</title>
+<link rel="apple-touch-icon" href="icon.jpg">
+<link rel="icon" href="icon.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f0f3f8; --bg2: #dde3ed;
+  --blue-dark: #1b3a5c; --blue-mid: #2c4a6e;
+  --orange: #e8732a; --green: #27ae60;
+  --red: #e02020; --purple: #9b59b6;
+  --text: #0f1f30; --text-mid: #1e3a55; --text-muted: #4a6a88;
+  --divider: #cdd5e0;
+  --shadow: 0 2px 16px rgba(27,58,92,0.09);
+  --shadow-lg: 0 6px 32px rgba(27,58,92,0.14);
+}
+body { font-family:'Rubik',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:16px; }
+
+/* UPLOAD */
+#uploadScreen { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 16px; background:var(--blue-dark); }
+.upload-logo { display:flex; align-items:center; gap:14px; margin-bottom:40px; }
+.upload-logo-icon { display:flex; align-items:center; justify-content:center; }
+.upload-logo h1 { font-family:'Rubik',sans-serif; font-size:26px; font-weight:700; color:white; }
+.upload-logo p { font-size:14px; color:rgba(255,255,255,0.55); margin-top:2px; }
+.upload-box { background:white; border-radius:20px; padding:36px; width:100%; max-width:480px; text-align:center; box-shadow:var(--shadow-lg); overflow:visible; }
+.upload-box h2 { font-family:'Rubik',sans-serif; font-size:22px; font-weight:700; color:var(--blue-dark); margin-bottom:8px; }
+.upload-box p { font-size:14px; color:var(--text-muted); margin-bottom:24px; line-height:1.6; }
+.drop-zone { border:2.5px dashed var(--bg2); border-radius:14px; padding:32px 20px; cursor:pointer; transition:all 0.2s; margin-bottom:16px; }
+.drop-zone:hover,.drop-zone.dragover { border-color:var(--orange); background:rgba(232,115,42,0.04); }
+.drop-zone .dz-icon { font-size:38px; margin-bottom:8px; }
+.drop-zone .dz-label { font-size:16px; font-weight:600; color:var(--text-mid); margin-bottom:3px; }
+.drop-zone .dz-sub { font-size:13px; color:var(--text-muted); }
+#fileInput { display:none; }
+.week-filter { display:flex; gap:8px; align-items:center; margin-bottom:0; direction:rtl; }
+.week-filter label { font-size:14px; font-weight:600; color:var(--text-mid); white-space:nowrap; }
+.week-filter input { flex:1; padding:9px 12px; border:1.5px solid var(--bg2); border-radius:8px; font-family:'Rubik',sans-serif; font-size:13px; color:var(--text); outline:none; }
+.week-filter input:focus { border-color:var(--orange); }
+.btn-analyze { width:100%; margin-top:14px; padding:13px; background:var(--orange); color:white; border:none; border-radius:10px; font-family:'Rubik',sans-serif; font-size:16px; font-weight:700; cursor:pointer; transition:all 0.15s; }
+.btn-analyze:hover { background:#d4621a; transform:translateY(-1px); }
+.btn-analyze:disabled { background:var(--bg2); color:var(--text-muted); cursor:not-allowed; transform:none; }
+.upload-hint { margin-top:24px; text-align:center; line-height:1.6; }
+
+/* HEADER */
+#dashboard { display:none; }
+header { background:var(--blue-dark); color:white; padding:0 28px; display:flex; align-items:center; justify-content:space-between; height:60px; box-shadow:0 2px 16px rgba(0,0,0,0.18); position:sticky; top:0; z-index:100; }
+.header-brand { display:flex; align-items:center; gap:10px; }
+.header-icon { display:flex; align-items:center; justify-content:center; }
+.header-title { font-family:'Rubik',sans-serif; font-size:17px; font-weight:700; }
+.header-sub { font-size:11px; opacity:0.55; margin-top:1px; }
+.header-right { display:flex; align-items:center; gap:10px; }
+/* CUSTOM CALENDAR PICKER */
+.datepicker-wrap { position:relative; display:inline-block; }
+.datepicker-display { background:rgba(255,255,255,0.1); border:none; color:white; padding:5px 10px; border-radius:6px; font-family:'Rubik',sans-serif; font-size:12px; cursor:pointer; white-space:nowrap; }
+.datepicker-display:hover { background:rgba(255,255,255,0.18); }
+.cal-popup { display:none; position:absolute; top:calc(100% + 6px); right:0; background:white; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.18); z-index:9999; padding:12px; width:240px; direction:rtl; }
+.cal-popup.open { display:block; }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.cal-nav button { background:none; border:none; cursor:pointer; font-size:16px; color:var(--blue-dark); padding:2px 6px; border-radius:4px; }
+.cal-nav button:hover { background:var(--bg); }
+.cal-month-label { font-size:13px; font-weight:700; color:var(--blue-dark); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-day-name { font-size:10px; font-weight:700; color:var(--text-muted); text-align:center; padding:4px 0; }
+.cal-day { font-size:12px; text-align:center; padding:5px 2px; border-radius:5px; cursor:pointer; color:var(--text); }
+.cal-day:hover { background:var(--bg2); }
+.cal-day.other-month { color:var(--text-muted); }
+.cal-day.selected { background:var(--orange); color:white; font-weight:700; }
+.cal-day.in-range { background:rgba(232,115,42,0.15); }
+.cal-day.today { border:1.5px solid var(--orange); }
+.cal-day.empty { cursor:default; }
+.cal-footer { margin-top:8px; display:flex; gap:6px; }
+.cal-footer button { flex:1; padding:6px; border:none; border-radius:6px; font-family:'Rubik',sans-serif; font-size:12px; font-weight:600; cursor:pointer; }
+.cal-btn-today { background:var(--orange); color:white; }
+.cal-btn-clear { background:var(--bg); color:var(--text-muted); }
+
+.header-date-sep { color:rgba(255,255,255,0.4); font-size:13px; }
+.btn-cancel-manual { font-size:11px; padding:4px 8px; border-radius:6px; border:1px solid rgba(224,32,32,0.3); background:rgba(224,32,32,0.07); color:var(--red); cursor:pointer; font-family:'Rubik',sans-serif; font-weight:600; white-space:nowrap; }
+.btn-cancel-manual:hover { background:rgba(224,32,32,0.15); }
+.btn-back { font-size:13px; background:rgba(255,255,255,0.12); border:none; color:white; padding:5px 12px; border-radius:8px; cursor:pointer; font-family:'Rubik',sans-serif; font-weight:600; }
+.btn-back:hover { background:rgba(255,255,255,0.2); }
+.btn-drive { font-size:12px; background:rgba(255,255,255,0.12); border:none; color:white; padding:5px 10px; border-radius:8px; cursor:pointer; font-family:'Rubik',sans-serif; font-weight:600; white-space:nowrap; }
+.btn-drive:hover { background:rgba(255,255,255,0.2); }
+.btn-drive.connected { background:rgba(39,174,96,0.3); }
+.btn-export { font-size:12px; background:var(--orange); border:none; color:white; padding:5px 10px; border-radius:8px; cursor:pointer; font-family:'Rubik',sans-serif; font-weight:600; white-space:nowrap; }
+.btn-export:hover { background:#d4621a; }
+
+/* MAIN */
+main { max-width:1080px; margin:0 auto; padding:24px 20px; }
+.tabs { display:flex; gap:8px; margin-bottom:20px; }
+.tab-btn { padding:8px 18px; border-radius:8px; border:1.5px solid var(--bg2); background:white; font-family:'Rubik',sans-serif; font-size:14px; font-weight:600; color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
+.tab-btn.active { background:var(--blue-dark); color:white; border-color:var(--blue-dark); }
+.tab-btn:hover:not(.active) { border-color:var(--orange); color:var(--orange); }
+
+/* STATS */
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+.stat-card { background:white; border-radius:14px; padding:20px 24px; box-shadow:var(--shadow); position:relative; overflow:hidden; animation:fadeUp 0.4s ease both; }
+.stat-card::after { content:''; position:absolute; bottom:0; right:0; left:0; height:3px; background:var(--orange); border-radius:0 0 14px 14px; }
+.stat-card.green::after { background:var(--green); }
+.stat-card.purple::after { background:var(--purple); }
+.stat-num { font-family:'Rubik',sans-serif; font-size:44px; font-weight:700; line-height:1; color:var(--text); }
+.stat-card.green .stat-num { color:var(--green); }
+.stat-label { font-size:13px; color:var(--text-muted); margin-top:6px; font-weight:500; }
+.stat-emoji { position:absolute; bottom:16px; left:16px; font-size:28px; opacity:0.08; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+/* LAYOUT */
+.two-col { display:grid; grid-template-columns:1fr 320px; gap:16px; margin-bottom:16px; }
+.section-card { background:white; border-radius:14px; box-shadow:var(--shadow); overflow:hidden; animation:fadeUp 0.45s ease both; }
+.sec-header { padding:16px 20px 14px; border-bottom:2px solid var(--divider); display:flex; align-items:center; justify-content:space-between; }
+.sec-title { font-family:'Rubik',sans-serif; font-size:16px; font-weight:700; color:var(--blue-dark); }
+.sec-badge { font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--bg); color:var(--text-muted); }
+
+/* CALL ROWS */
+.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:center; transition:background 0.15s, border-color 0.15s; cursor:default; }
+.call-row:last-child { border-bottom:none; }
+.call-row:hover { background:#e8f0fa; border-bottom-color:#b8cadf; }
+.call-idx { width:24px; height:24px; background:var(--bg2); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text-muted); flex-shrink:0; }
+.call-loc { font-size:17px; font-weight:700; color:var(--text); margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.call-meta { font-size:14px; color:var(--text-mid); display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-weight:500; }
+.call-meta .hint { font-size:12px; color:var(--text-muted); font-weight:400; opacity:0; transition:opacity 0.15s; }
+.call-row:hover .hint { opacity:1; }
+.call-right { text-align:left; flex-shrink:0; min-width:80px; }
+.call-date { font-size:13px; color:var(--text-muted); margin-bottom:2px; font-weight:500; }
+.call-time { font-size:15px; color:var(--text-mid); margin-bottom:6px; font-weight:600; }
+.status-sab { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; background:rgba(39,174,96,0.12); color:var(--green); }
+.status-cancelled { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; background:rgba(127,155,181,0.15); color:var(--text-muted); }
+.status-open { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; background:rgba(232,115,42,0.12); color:var(--orange); }
+.status-transferred { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; background:rgba(155,89,182,0.12); color:var(--purple); }
+.call-row.is-cancelled { background:#f0f2f5; }
+.call-row.is-cancelled .call-loc { color:#5a6e82; }
+.call-row.is-cancelled:hover { background:#e4e8ef; }
+.handler-name { font-size:13px; color:var(--orange); font-weight:600; margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.handler-edit-btn { font-size:13px; color:var(--orange); font-weight:700; cursor:pointer; border:none; background:none; font-family:'Rubik',sans-serif; padding:0; text-decoration:underline; text-decoration-style:dotted; }
+.handler-edit-btn:hover { text-decoration:underline; text-decoration-style:solid; }
+.handler-edit-hint { font-size:11px; color:var(--text-muted); font-weight:400; cursor:default; }
+.btn-assign { font-size:12px; color:var(--blue-mid); font-weight:600; margin-top:4px; cursor:pointer; background:none; border:1.5px dashed var(--bg2); border-radius:5px; padding:3px 10px; font-family:'Rubik',sans-serif; }
+.btn-assign:hover { border-color:var(--orange); color:var(--orange); }
+.btn-add-handler { font-size:13px; font-weight:700; color:white; background:var(--orange); border:none; border-radius:50%; width:20px; height:20px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; padding:0; line-height:1; flex-shrink:0; }
+.btn-add-handler:hover { background:#d4621a; }
+.btn-chat-view { display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--blue-mid); background:rgba(44,74,110,0.07); border:1px solid rgba(44,74,110,0.15); border-radius:5px; cursor:pointer; font-family:'Rubik',sans-serif; padding:3px 9px; margin-top:5px; font-weight:500; transition:all 0.15s; }
+.btn-chat-view:hover { background:rgba(44,74,110,0.14); color:var(--blue-dark); }
+
+/* VOLUNTEERS */
+.vol-row { padding:12px 20px; display:flex; align-items:center; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
+.vol-row:last-child { border-bottom:none; }
+.vol-row:hover { background:#e8f0fa; }
+.vol-rank { width:22px; font-size:13px; font-weight:700; color:var(--text-muted); text-align:center; flex-shrink:0; }
+.vol-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; }
+.vol-info { flex:1; min-width:0; }
+.vol-name { font-size:15px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vol-sub { font-size:13px; color:var(--text-muted); margin-top:1px; }
+.vol-count { font-family:'Rubik',sans-serif; font-size:28px; font-weight:700; color:var(--orange); flex-shrink:0; }
+.av0{background:#e8732a} .av1{background:#27ae60} .av2{background:#1b3a5c} .av3{background:#9b59b6} .av4{background:#e02020} .av5{background:#2980b9} .av6{background:#16a085} .av7{background:#8e44ad}
+
+/* REGIONS */
+.regions-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; padding:16px; }
+.region-card { background:var(--bg); border-radius:10px; padding:12px 14px; text-align:center; }
+.region-name { font-size:13px; font-weight:700; color:var(--blue-mid); margin-bottom:8px; }
+.region-bar-wrap { height:5px; background:var(--bg2); border-radius:3px; margin-bottom:6px; overflow:hidden; }
+.region-bar { height:100%; border-radius:3px; background:var(--orange); }
+.region-nums { font-size:12px; color:var(--text-muted); }
+.region-nums strong { color:var(--text); font-weight:700; }
+.rc0{background:var(--orange)} .rc1{background:var(--green)} .rc2{background:var(--purple)} .rc3{background:var(--blue-mid)} .rc4{background:var(--red)}
+
+/* SEARCH */
+.search-bar { padding:14px 16px; border-bottom:1.5px solid var(--divider); display:flex; gap:10px; flex-wrap:wrap; }
+.search-bar input, .search-bar select { padding:9px 13px; border:1.5px solid var(--bg2); border-radius:8px; font-family:'Rubik',sans-serif; font-size:14px; outline:none; background:white; }
+.search-bar input { flex:1; min-width:160px; direction:rtl; }
+.search-bar input:focus,.search-bar select:focus { border-color:var(--orange); }
+.search-count { padding:8px 16px; font-size:13px; color:var(--text-muted); border-bottom:1.5px solid var(--divider); }
+
+/* ASSIGN MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(18,37,58,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.open { display:flex; }
+.modal { background:white; border-radius:16px; width:100%; max-width:460px; overflow:hidden; box-shadow:var(--shadow-lg); animation:fadeUp 0.25s ease; }
+.modal-header { padding:16px 20px; border-bottom:1px solid var(--bg); display:flex; align-items:center; justify-content:space-between; background:var(--blue-dark); color:white; }
+.modal-title { font-family:'Rubik',sans-serif; font-size:16px; font-weight:700; }
+.modal-close { background:rgba(255,255,255,0.15); border:none; color:white; width:28px; height:28px; border-radius:7px; font-size:16px; cursor:pointer; }
+.modal-body { padding:20px; }
+.modal-body label { display:block; font-size:14px; font-weight:600; color:var(--text-mid); margin-bottom:6px; }
+.modal-call-info { background:var(--bg); border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:14px; color:var(--text-mid); line-height:1.6; }
+.autocomplete-wrap { position:relative; }
+.autocomplete-wrap input { width:100%; padding:10px 12px; border:1.5px solid var(--bg2); border-radius:8px; font-family:'Rubik',sans-serif; font-size:14px; outline:none; direction:rtl; }
+.autocomplete-wrap input:focus { border-color:var(--orange); }
+.autocomplete-list { position:absolute; top:100%; right:0; left:0; background:white; border:1.5px solid var(--bg2); border-top:none; border-radius:0 0 8px 8px; max-height:180px; overflow-y:auto; z-index:10; box-shadow:var(--shadow); }
+.autocomplete-item { padding:10px 14px; font-size:14px; cursor:pointer; border-bottom:1px solid var(--bg); transition:background 0.1s; }
+.autocomplete-item:hover, .autocomplete-item.selected { background:rgba(232,115,42,0.08); color:var(--orange); font-weight:600; }
+.autocomplete-item:last-child { border-bottom:none; }
+.modal-actions { display:flex; gap:10px; margin-top:16px; }
+.btn-confirm { flex:1; padding:11px; background:var(--orange); color:white; border:none; border-radius:8px; font-family:'Rubik',sans-serif; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-confirm:hover { background:#d4621a; }
+.btn-cancel-modal { padding:11px 18px; background:var(--bg); color:var(--text-muted); border:none; border-radius:8px; font-family:'Rubik',sans-serif; font-size:14px; font-weight:600; cursor:pointer; }
+
+/* HANDLER TAGS */
+.handler-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; min-height:0; }
+.handler-tag { display:inline-flex; align-items:center; gap:5px; background:rgba(232,115,42,0.1); color:var(--orange); border:1px solid rgba(232,115,42,0.3); border-radius:20px; padding:4px 10px; font-size:13px; font-weight:600; }
+.handler-tag button { background:none; border:none; color:var(--orange); cursor:pointer; font-size:14px; padding:0; line-height:1; }
+.modal-call-row { padding:13px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px 1fr auto; gap:10px; align-items:center; cursor:pointer; }
+.modal-call-row:last-child { border-bottom:none; }
+.modal-call-row:hover { background:#f9fafb; }
+.modal-num { width:24px; height:24px; background:var(--orange); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:white; }
+.modal-loc { font-size:14px; font-weight:600; color:var(--text); }
+.modal-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.modal-time { font-size:12px; color:var(--text-muted); text-align:left; }
+
+.empty-msg { text-align:center; padding:32px; color:var(--text-muted); font-size:14px; }
+
+/* MOBILE DATE BAR — hidden on desktop */
+.mobile-date-bar { display:none; }
+
+/* ===================== MOBILE RESPONSIVE ===================== */
+@media (max-width: 640px) {
+
+  /* Upload screen */
+  #uploadScreen { padding:20px 12px; justify-content:flex-start; padding-top:32px; }
+  .upload-logo { margin-bottom:22px; gap:12px; }
+  .upload-logo h1 { font-size:23px; }
+  .upload-logo p { font-size:14px; }
+  .upload-logo img { height:84px !important; }
+  .upload-box { padding:20px 16px; border-radius:16px; }
+  .upload-box h2 { font-size:19px; margin-bottom:10px; }
+  .drop-zone { padding:18px 12px; margin-bottom:14px; }
+  .drop-zone .dz-icon { margin-bottom:6px; }
+  .drop-zone .dz-label { font-size:15px; }
+  .drop-zone .dz-sub { font-size:13px; }
+
+  /* Date pickers on upload — two dates on one row */
+  .week-filter { flex-direction:row; align-items:center; gap:6px; direction:rtl; justify-content:center; }
+  .week-filter label { font-size:12px; font-weight:700; color:var(--text-mid); white-space:nowrap; flex-shrink:0; }
+  .datepicker-wrap { flex:1 !important; width:auto !important; }
+  #uploadScreen .datepicker-display { font-size:13px !important; padding:8px 10px !important; width:100% !important; border-radius:8px !important; text-align:center !important; background:var(--bg) !important; color:var(--text) !important; border:1.5px solid var(--bg2) !important; }
+
+  /* Calendar popup — centered on screen */
+  .cal-popup {
+    position:fixed !important;
+    top:50% !important;
+    left:50% !important;
+    transform:translate(-50%,-50%) !important;
+    width:min(340px, calc(100vw - 24px)) !important;
+    right:auto !important;
+    z-index:1200 !important;
+    box-shadow:0 16px 48px rgba(0,0,0,0.35) !important;
+    direction:rtl !important;
+  }
+  .cal-grid { direction:rtl; }
+  .cal-day { font-size:16px !important; padding:9px 2px !important; min-height:38px; display:flex; align-items:center; justify-content:center; }
+  .cal-day-name { font-size:13px !important; padding:6px 0 !important; }
+  .cal-nav button { font-size:26px !important; padding:6px 14px !important; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; }
+  .cal-month-label { font-size:16px !important; }  .cal-footer button { padding:10px !important; font-size:14px !important; }
+
+  /* Header — simple single row on mobile */
+  header { height:52px; padding:0 14px; flex-direction:row; }
+  .header-brand { flex:1; min-width:0; overflow:hidden; }
+  .header-title { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .header-sub { display:none; }
+  .header-icon { flex-shrink:0; }
+  .header-right { gap:8px; }
+  .header-dates-desktop { display:none !important; } /* hide dates from header on mobile */
+  .btn-back { font-size:12px; padding:6px 12px; white-space:nowrap; }
+
+  /* Show mobile date bar */
+  .mobile-date-bar {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:white;
+    padding:10px 14px;
+    border-bottom:1.5px solid var(--divider);
+    direction:rtl;
+  }
+  .mobile-date-label { font-size:13px; font-weight:600; color:var(--text-mid); white-space:nowrap; flex-shrink:0; }
+  .mobile-date-btn {
+    background:var(--bg) !important;
+    color:var(--text) !important;
+    border:1.5px solid var(--divider) !important;
+    border-radius:8px !important;
+    font-size:13px !important;
+    padding:8px 10px !important;
+    width:100% !important;
+    text-align:right !important;
+  }
+  .mobile-date-bar .datepicker-wrap { flex:1; }
+
+  /* Stats */
+  .stats-row { grid-template-columns:repeat(3,1fr); gap:8px; }
+  .stat-card { padding:12px 10px; border-radius:10px; }
+  .stat-num { font-size:30px; }
+  .stat-label { font-size:12px; letter-spacing:0; }
+  .stat-emoji { font-size:18px; bottom:8px; left:8px; }
+
+  /* Two-col → single column, volunteers first */
+  .two-col { grid-template-columns:1fr; gap:12px; }
+  .two-col .section-card[style*="order:2"] { order:2; }
+  .two-col .section-card[style*="order:1"] { order:1; }
+
+  /* Date bar — native inputs */
+  .mobile-date-bar {
+    display:flex !important;
+    gap:8px;
+    padding:8px 12px;
+    background:var(--blue-dark);
+    align-items:center;
+    width:100%;
+  }
+  .mobile-date-input {
+    flex:1;
+    min-width:0;
+    background:rgba(255,255,255,0.15);
+    color:white;
+    border:none;
+    border-radius:8px;
+    padding:7px 8px;
+    font-size:13px;
+    font-family:'Rubik',sans-serif;
+    text-align:center;
+    -webkit-appearance:none;
+    color-scheme:dark;
+  }
+
+  /* Main */
+  main { padding:14px 10px; }
+
+  /* Tabs */
+  .tabs { gap:5px; }
+  .tab-btn { padding:7px 10px; font-size:12px; flex:1; text-align:center; }
+
+  /* Call rows */
+  .call-row { padding:13px 10px; gap:8px; grid-template-columns:22px 1fr 76px; }
+  .call-idx { align-self:start; margin-top:2px; width:20px; height:20px; font-size:11px; }
+  .call-loc { font-size:15px; white-space:normal; word-break:break-word; }
+  .call-meta { font-size:13px; }
+  .call-right { min-width:0; width:76px; text-align:center; align-self:start; }
+  .call-date { font-size:12px; }
+  .call-time { font-size:13px; margin-bottom:4px; }
+  .status-sab, .status-cancelled, .status-open, .status-transferred { font-size:11px; padding:3px 5px; white-space:normal; word-break:keep-all; display:block; text-align:center; line-height:1.3; }
+  .handler-name { font-size:13px; }
+  .handler-edit-btn { font-size:12px; }
+  .handler-edit-hint { display:none; }
+  .btn-chat-view { font-size:11px; padding:3px 7px; }
+  .vol-name { font-size:15px; }
+  .vol-sub { font-size:13px; }
+  .vol-count { font-size:24px; }
+  .tab-btn { padding:9px 10px; font-size:13px; flex:1; text-align:center; }
+  .autocomplete-item { padding:14px 16px; font-size:16px; }
+  .handler-tag { font-size:14px; padding:6px 12px; }
+
+  /* Section headers */
+  .sec-header { padding:12px 14px 10px; }
+  .sec-title { font-size:14px; }
+  .sec-badge { font-size:11px; }
+
+  /* Vol rows */
+  .vol-row { padding:10px 12px; }
+  .vol-name { font-size:13px; }
+
+  /* Modals — centered on mobile */
+  .modal-overlay { padding:16px; align-items:center; }
+  .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
+  .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .chat-modal { max-height:88vh; border-radius:16px; }
+  .chat-body { -webkit-overflow-scrolling:touch; }
+
+  /* Regions */
+  .regions-grid { grid-template-columns:repeat(2,1fr); padding:10px; gap:8px; }
+  .region-name { font-size:12px; }
+
+  /* Search */
+  .search-bar { flex-direction:column; gap:8px; padding:10px 12px; }
+  .search-bar input, .search-bar select { width:100%; min-width:0; font-size:14px; }
+
+  /* Autocomplete */
+  .autocomplete-list { max-height:220px; }
+  .autocomplete-item { padding:13px 14px; font-size:15px; }
+
+  /* Buttons */
+  .btn-analyze { font-size:15px; padding:13px; margin-top:12px; }
+  .btn-confirm, .btn-cancel-modal { padding:13px; font-size:15px; }
+  .upload-box ol { font-size:14px !important; line-height:1.9 !important; }
+}
+
+/* VOL LIST GRID — desktop shows 2 columns */
+.vol-list-grid { display:grid; grid-template-columns:repeat(2,1fr); }
+.vol-list-grid .vol-row { border-bottom:1.5px solid var(--divider); }
+.vol-list-grid .vol-row:nth-last-child(-n+2) { border-bottom:none; }
+@media (max-width:640px) {
+  .vol-list-grid { grid-template-columns:1fr; }
+  .vol-list-grid .vol-row:last-child { border-bottom:none; }
+  .vol-list-grid .vol-row:nth-last-child(-n+2) { border-bottom:1.5px solid var(--divider); }
+}
+
+/* CHAT VIEWER MODAL */
+.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; }
+.chat-modal .modal-header { flex-shrink:0; }
+.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; }
+.chat-bubble-wrap { display:flex; margin-bottom:10px; }
+.chat-bubble { max-width:80%; padding:8px 12px; border-radius:10px; font-size:13px; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+.chat-bubble.incoming { background:white; border-radius:0 10px 10px 10px; }
+.chat-bubble.call-msg { background:#dcf8c6; border-radius:10px 0 10px 10px; align-self:flex-end; }
+.chat-bubble .bubble-sender { font-size:11px; font-weight:700; color:var(--orange); margin-bottom:3px; }
+.chat-bubble .bubble-time { font-size:10px; color:var(--text-muted); text-align:left; margin-top:3px; }
+.chat-bubble .bubble-text { white-space:pre-wrap; word-break:break-word; }
+.chat-bubble-wrap.outgoing { justify-content:flex-end; }
+.call-row { cursor:pointer; }
+.call-row-hint { font-size:10px; color:var(--text-muted); opacity:0; transition:opacity 0.15s; }
+.call-row:hover .call-row-hint { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- UPLOAD -->
+<div id="uploadScreen">
+  <div class="upload-logo">
+    <img src="data:image/png;base64,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" style="height:72px;width:auto;object-fit:contain;border-radius:14px;" alt="לוגו יחידת פנתר">
+    <div>
+      <h1>יחידת פנתר – ידידים</h1>
+      <p>לוח בקרה שבועי אוטומטי</p>
+    </div>
+  </div>
+  <div class="upload-box">
+    <h2>העלה קובץ ייצוא וואטסאפ</h2>
+    <ol style="text-align:right;font-size:14px;color:var(--text-muted);line-height:2;margin-bottom:4px;padding-right:18px;">
+      <li>היכנסו בוואטסאפ לקבוצת <strong style="color:var(--text-mid)">"ידידים פנתר - מבצעי"</strong>.</li>
+      <li>בפרטי הקבוצה (לחיצה על השם), גללו למטה ובחרו ב-<strong style="color:var(--text-mid)">"ייצוא צ'אט"</strong> &larr; <strong style="color:var(--text-mid)">"ללא מדיה"</strong>.</li>
+      <li>שמרו את הקובץ (ZIP או TXT) וגררו אותו לכאן.</li>
+    </ol>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="dz-icon"><svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10C6 8.34 7.34 7 9 7H19L23 12H39C40.66 12 42 13.34 42 15V38C42 39.66 40.66 41 39 41H9C7.34 41 6 39.66 6 38V10Z" fill="#FFB300"/><path d="M6 18H42V38C42 39.66 40.66 41 39 41H9C7.34 41 6 39.66 6 38V18Z" fill="#FFD54F"/></svg></div>
+      <div class="dz-label">לחץ לבחירת קובץ או גרור לכאן</div>
+      <div class="dz-sub" id="dzSub">קובץ TXT או ZIP מייצוא וואטסאפ (אייפון ואנדרואיד)</div>
+    </div>
+    <input type="file" id="fileInput" accept=".txt,.zip,.text,text/plain,application/zip,application/x-zip-compressed">
+    <div class="week-filter" style="direction:rtl;">
+      <label>מתאריך:</label>
+      <div class="datepicker-wrap" style="flex:1;position:relative;">
+        <button class="datepicker-display" id="btnUploadStart" onclick="toggleUploadCal('start')" style="background:var(--bg2);color:var(--text);width:100%;text-align:right;">📅 —</button>
+        <div class="cal-popup" id="calUploadStart" style="position:fixed;z-index:9999;"></div>
+      </div>
+      <label>עד:</label>
+      <div class="datepicker-wrap" style="flex:1;position:relative;">
+        <button class="datepicker-display" id="btnUploadEnd" onclick="toggleUploadCal('end')" style="background:var(--bg2);color:var(--text);width:100%;text-align:right;">📅 —</button>
+        <div class="cal-popup" id="calUploadEnd" style="position:fixed;z-index:9999;"></div>
+      </div>
+    </div>
+    <input type="hidden" id="weekStart">
+    <input type="hidden" id="weekEnd">
+    <button class="btn-analyze" id="analyzeBtn" disabled onclick="analyze()">🔍 נתח וצור סיכום</button>
+    <div id="driveDataBox" style="display:none;margin-top:12px;"></div>
+  </div>
+  <div class="upload-hint">
+    <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:4px;">פותח באהבה עבור יחידת פנתר</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:8px;">ע״י מוטי יאיר</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.6;">הנתונים מעובדים בדפדפן שלך ונשמרים ב-Google Drive של היחידה בלבד</div>
+  </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assignOverlay" style="align-items:center;padding:12px;">
+  <div class="modal" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header" style="padding:18px 22px;">
+      <div class="modal-title" style="font-size:18px;">שיוך כונן לאירוע</div>
+      <button class="modal-close" onclick="confirmAssign()" style="width:34px;height:34px;font-size:18px;">✕</button>
+    </div>
+    <div class="modal-body" style="overflow:visible;padding:22px;flex:1;">
+      <div class="modal-call-info" id="assignCallInfo" style="font-size:15px;padding:14px;margin-bottom:18px;"></div>
+      <label style="font-size:15px;font-weight:700;margin-bottom:10px;display:block;">כוננים שטיפלו בקריאה:</label>
+      <div class="handler-tags" id="handlerTags" style="min-height:44px;margin-bottom:16px;gap:8px;"></div>
+      <div class="autocomplete-wrap" style="position:relative;">
+        <input type="text" id="assignInput" placeholder="הוסף כונן..." oninput="onAssignInput()" onkeydown="onAssignKey(event)" autocomplete="off" style="font-size:16px;padding:14px;border-radius:10px;">
+        <div class="autocomplete-list" id="assignList" style="max-height:260px;position:absolute;top:100%;right:0;left:0;z-index:9999;"></div>
+      </div>
+      <div style="height:280px;"></div>
+      <div class="modal-actions" style="margin-top:22px;gap:12px;">
+        <button class="btn-confirm" onclick="confirmAssign()" style="font-size:16px;padding:14px;">✓ שמור</button>
+        <button class="btn-cancel-modal" onclick="confirmAssign()" style="font-size:16px;padding:14px;">סגור</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VOL CALLS MODAL -->
+<div class="modal-overlay" id="volOverlay" onclick="closeVolModal(event)">
+  <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:80vh">
+    <div class="modal-header">
+      <div class="modal-title" id="volModalTitle">קריאות הכונן</div>
+      <button class="modal-close" onclick="closeVolModal()">✕</button>
+    </div>
+    <div id="volModalSummary" style="padding:14px 20px;background:var(--bg);border-bottom:1.5px solid var(--divider);display:flex;gap:16px;flex-shrink:0"></div>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch" id="volModalBody"></div>
+  </div>
+</div>
+
+<!-- CHAT VIEWER MODAL -->
+<div class="modal-overlay" id="chatOverlay" onclick="closeChatModal(event)">
+  <div class="modal chat-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="chatModalTitle">שיחה</div>
+        <div style="font-size:11px;opacity:0.7;margin-top:2px" id="chatModalSub"></div>
+      </div>
+      <button class="modal-close" onclick="closeChatModal()">✕</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header>
+    <div class="header-brand">
+      <img src="data:image/png;base64,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" style="height:44px;width:auto;object-fit:contain;border-radius:10px;" alt="לוגו">
+      <div>
+        <div class="header-title">יחידת פנתר – ידידים</div>
+        <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <!-- Desktop dates (hidden on mobile) -->
+      <div class="header-dates-desktop" style="display:flex;align-items:center;gap:6px;">
+        <div class="datepicker-wrap">
+          <button class="datepicker-display" id="btnStart" onclick="toggleCal('start')">📅 —</button>
+          <div class="cal-popup" id="calStart"></div>
+        </div>
+        <span class="header-date-sep">—</span>
+        <div class="datepicker-wrap">
+          <button class="datepicker-display" id="btnEnd" onclick="toggleCal('end')">📅 —</button>
+          <div class="cal-popup" id="calEnd"></div>
+        </div>
+      </div>
+      <button class="btn-back" onclick="goBack()">← חזור</button>
+      <button class="btn-drive" id="btnDrive" onclick="driveLogin()" title="התחבר ל-Google Drive">☁️ Drive</button>
+      <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצוא</button>
+    </div>
+  </header>
+  <!-- Mobile date bar (visible only on mobile) -->
+  <div class="mobile-date-bar">
+    <input type="date" id="mobileStartDate" class="mobile-date-input" onchange="onMobileDateChange()">
+    <span style="color:rgba(255,255,255,0.5);flex-shrink:0">—</span>
+    <input type="date" id="mobileEndDate" class="mobile-date-input" onchange="onMobileDateChange()">
+  </div>
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-dash" onclick="switchTab('dash')">📊 דאשבורד</button>
+      <button class="tab-btn" id="tab-search" onclick="switchTab('search')">🔍 חיפוש</button>
+      <button class="tab-btn" id="tab-vols" onclick="switchTab('vols')">👥 מאגר כוננים</button>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="tabDash">
+      <div class="stats-row" id="statsRow"></div>
+      <div class="section-card" style="margin-bottom:16px;">
+        <div class="sec-header">
+          <div class="sec-title">כוננים מובילים 🏆</div>
+          <div class="sec-badge" id="volBadge">—</div>
+        </div>
+        <div id="volList" class="vol-list-grid"></div>
+      </div>
+      <div class="section-card" style="margin-bottom:16px;">
+        <div class="sec-header">
+          <div class="sec-title" id="callsSectionTitle">קריאות</div>
+          <div class="sec-badge" id="callsBadge">—</div>
+        </div>
+        <div id="callsList"></div>
+      </div>
+      <div class="section-card">
+        <div class="sec-header">
+          <div class="sec-title">פירוט לפי אזור</div>
+          <div class="sec-badge" id="regionBadge">—</div>
+        </div>
+        <div class="regions-grid" id="regionsGrid"></div>
+      </div>
+    </div>
+
+    <!-- SEARCH TAB -->
+    <div id="tabSearch" style="display:none">
+      <div class="section-card">
+        <div class="sec-header"><div class="sec-title">חיפוש בכל הקריאות</div></div>
+        <div class="search-bar">
+          <input type="text" id="searchText" placeholder="מיקום, רכב, כונן, תאריך..." oninput="doSearch()">
+          <select id="searchRegion" onchange="doSearch()"><option value="">כל האזורים</option></select>
+          <select id="searchStatus" onchange="doSearch()">
+            <option value="">כל הסטטוסים</option>
+            <option value="sab">סא"ב</option>
+            <option value="cancelled">בוטל</option>
+            <option value="transferred">הועבר למחוזי</option>
+            <option value="open">לא שוייך לכונן</option>
+          </select>
+        </div>
+        <div class="search-count" id="searchCount"></div>
+        <div id="searchResults"></div>
+      </div>
+    </div>
+
+    <!-- VOLUNTEERS DB TAB -->
+    <div id="tabVols" style="display:none">
+      <div class="section-card">
+        <div class="sec-header">
+          <div class="sec-title">מאגר כוננים</div>
+          <div class="sec-badge" id="volDbBadge">—</div>
+        </div>
+        <div style="padding:14px 16px;border-bottom:1px solid var(--bg);display:flex;gap:10px;">
+          <input type="text" id="volDbSearch" placeholder="חפש כונן..." oninput="renderVolDb()"
+            style="flex:1;padding:8px 12px;border:1.5px solid var(--bg2);border-radius:8px;font-family:Heebo,sans-serif;font-size:13px;outline:none;direction:rtl;">
+          <button onclick="addVolManual()" style="padding:8px 14px;background:var(--orange);color:white;border:none;border-radius:8px;font-family:Heebo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ הוסף ידנית</button>
+          <button onclick="exportPhonebook()" style="padding:8px 14px;background:var(--blue-dark);color:white;border:none;border-radius:8px;font-family:Heebo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📥 ייצוא</button>
+        </div>
+        <div id="volDbList"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ===================== STATE =====================
+let parsedData = { calls: [], volunteers: {}, regions: {} };
+let rawText = '';
+let manualAssignments = {}; // callIndex -> volName
+let manualStatuses = {};    // callIndex -> 'cancelled'|'open' (manual status override)
+let manualNotes = {};       // callIndex -> closing note text
+let volDatabase = new Set();
+let assigningCallIndex = -1;
+let acSelectedIdx = -1;
+
+function loadStorage() {
+  try {
+    const saved = localStorage.getItem('yedidim_vols');
+    if (saved) JSON.parse(saved).forEach(v => volDatabase.add(v));
+    const savedAssign = localStorage.getItem('yedidim_assign');
+    if (savedAssign) manualAssignments = JSON.parse(savedAssign);
+    const savedStatus = localStorage.getItem('yedidim_statuses');
+    if (savedStatus) manualStatuses = JSON.parse(savedStatus);
+    const savedNotes = localStorage.getItem('yedidim_notes');
+    if (savedNotes) manualNotes = JSON.parse(savedNotes);
+  } catch(e) {}
+}
+function saveStorage() {
+  try {
+    localStorage.setItem('yedidim_vols', JSON.stringify([...volDatabase]));
+    localStorage.setItem('yedidim_assign', JSON.stringify(manualAssignments));
+    localStorage.setItem('yedidim_statuses', JSON.stringify(manualStatuses));
+    localStorage.setItem('yedidim_notes', JSON.stringify(manualNotes));
+  } catch(e) {}
+}
+loadStorage();
+
+// ===================== FILE =====================
+document.getElementById('fileInput').addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+function loadFile(file) {
+  const name = file.name.toLowerCase();
+  // Detect ZIP by extension or MIME type
+  const isZip = name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
+  if (isZip) {
+    loadZipFile(file);
+  } else {
+    // Accept any text file regardless of name
+    const r = new FileReader();
+    r.onload = e => {
+      const text = e.target.result;
+      // Validate it looks like a WhatsApp export (iOS or Android format)
+      const looksLikeWA = /\[\d{1,2}\.\d{1,2}\.\d{4},/.test(text) || // iOS: [25.02.2026,
+                          /\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}:\d{2}/.test(text); // Android: 25/02/26, 15:30
+      if (!looksLikeWA) {
+        alert('הקובץ לא נראה כמו ייצוא וואטסאפ.\nוודא שייצאת את הצ\'אט מהאפליקציה.');
+        return;
+      }
+      processText(text, file.name, file.size);
+    };
+    r.readAsText(file, 'utf-8');
+  }
+}
+
+async function loadZipFile(file) {
+  document.getElementById('dzSub').textContent = '⏳ מחלץ מהקובץ...';
+  try {
+    const JSZip = window.JSZip;
+    if (!JSZip) { alert('שגיאה: ספריית ZIP לא נטענה'); return; }
+    const zip = await JSZip.loadAsync(file);
+    // Find any .txt file — prefer _chat.txt or WhatsApp*.txt, fall back to any txt
+    let txtFile = null, fallback = null;
+    zip.forEach((path, f) => {
+      if (f.dir) return;
+      const p = path.toLowerCase();
+      if (p.endsWith('.txt')) {
+        if (p.includes('_chat') || p.includes('whatsapp')) txtFile = f;
+        else if (!fallback) fallback = f;
+      }
+    });
+    txtFile = txtFile || fallback;
+    if (!txtFile) { alert('לא נמצא קובץ טקסט בתוך ה-ZIP'); return; }
+    const text = await txtFile.async('string');
+    processText(text, file.name, file.size);
+  } catch(err) {
+    alert('שגיאה בפתיחת קובץ ZIP: ' + err.message);
+  }
+}
+
+function processText(text, fileName, fileSize) {
+  rawText = text;
+  document.getElementById('dzSub').textContent = `✓ נטען: ${fileName} (${(fileSize/1024).toFixed(0)} KB)`;
+  document.getElementById('analyzeBtn').disabled = false;
+  const dates = extractDates(rawText).sort((a,b)=>a-b);
+  if (dates.length) {
+    const last = dates[dates.length-1];
+    const weekStart = getWeekStartSunday(last);
+    const weekEnd = getWeekEndSaturday(last);
+    document.getElementById('weekStart').value = fmtDate(weekStart);
+    document.getElementById('weekEnd').value = fmtDate(weekEnd);
+    // sync native date inputs on upload screen
+    const us=document.getElementById('uploadStartDate'); if(us) us.value=fmtDate(weekStart);
+    const ue=document.getElementById('uploadEndDate'); if(ue) ue.value=fmtDate(weekEnd);
+    // sync header datepicker buttons
+    ['btnUploadStart','btnStart'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='📅 '+formatDisplayDate(weekStart);});
+    ['btnUploadEnd','btnEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='📅 '+formatDisplayDate(weekEnd);});
+    const ms=document.getElementById('mobileStartDate'); if(ms) ms.value=fmtDate(weekStart);
+    const me=document.getElementById('mobileEndDate'); if(me) me.value=fmtDate(weekEnd);
+  }
+}
+
+function extractDates(text) {
+  const dates = [];
+  // iOS format: [25.02.2026,
+  const reIOS = /\[(\d{1,2})\.(\d{1,2})\.(\d{4}),/g;
+  let m;
+  while((m=reIOS.exec(text))!==null) dates.push(new Date(m[3],m[2]-1,m[1]));
+  // Android format: 25/02/2026, or 25/02/26,
+  const reAndroid = /(\d{1,2})\/(\d{1,2})\/(\d{2,4}),/g;
+  while((m=reAndroid.exec(text))!==null) {
+    let y = parseInt(m[3]); if (y < 100) y += 2000;
+    dates.push(new Date(y,m[2]-1,m[1]));
+  }
+  return dates;
+}
+function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+// ===================== PARSER =====================
+function parseWhatsApp(text, startDate, endDate) {
+  const lines = text.split('\n');
+  const messages = [];
+
+  // iOS format: [25.02.2026, 15:30:00] שם: הודעה
+  const msgReIOS = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
+  // Android format: 25/02/2026, 15:30 - שם: הודעה
+  const msgReAndroid = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+
+  let cur = null;
+  for (const line of lines) {
+    let m = msgReIOS.exec(line);
+    let isAndroid = false;
+    if (!m) { m = msgReAndroid.exec(line); isAndroid = !!m; }
+    if (m) {
+      if (cur) messages.push(cur);
+      let y = parseInt(m[3]); if (isAndroid && y < 100) y += 2000;
+      const date = new Date(y, m[2]-1, m[1]);
+      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').trim(), body:m[7].trim() };
+    } else if (cur) cur.body += '\n' + line.trim();
+  }
+  if (cur) messages.push(cur);
+
+  const filtered = messages.filter(msg => {
+    if (startDate && msg.date < startDate) return false;
+    if (endDate) { const e=new Date(endDate); e.setDate(e.getDate()+1); if(msg.date>=e) return false; }
+    return true;
+  });
+
+  // Strict: only match dispatcher messages that have מוקד + (ארצי|מרחב) — real call format
+  const CALL_RE = /מוקד\s*(ארצי\s+מרחב|ארצי|מרחב)\s*\S+/i;
+  const CALL_REGION_RE = /מוקד.*?מרחב\s*(\S+)/i;
+
+  function normalizeRegion(r) {
+    r = r.replace(/[*_]/g,'').trim();
+    if (/^(רמת|רמת.גולן|גולן)$/i.test(r)) return 'גולן';
+    return r;
+  }
+
+  // SAB variants: ס.א.ב / סאב / ס א ב / סאבבה / סאל / חולץ / חולץ טלפוני / סיום
+  const SAB_RE = /ס[\s.]?א[\s.]?ב|^סאב|^סאבבה|^סאל\b|^סיום\b|^חולץ\b|חולץ\s+טלפוני/im;
+
+  // Transferred to district — special status
+  const TRANSFER_RE = /נלקח במחוזי|הועבר למחוזי|טיפול מחוזי|נלקח ע"י מחוזי|עבר למחוזי/i;
+
+  // External unit (not a Panther volunteer) — "חולץ ע"י גורם חיצוני"
+  const EXTERNAL_UNIT_RE = /סגמ\s+\S+|סג"מ\s+\S+|מחוזי\s+חילץ|יחידת\s+\S+\s+חילצה/i;
+
+  // Someone else helped
+  const OTHER_HELPED_RE = /מישהו שם חילץ|מישהו עזר|חילץ אותו|חילצו אותו|מישהו פה עזר|עזרה מקומית/i;
+
+  // End-of-call (cancelled/no credit)
+  const END_RE = /הסתדר לבד|הסתדרו לבד|יצא לבד|יצאו לבד|חולץ ע["״]י חבר|חולץ ע["״]י מכונא|בוטל|ביטל/i;
+
+  // Intent patterns
+  const INTENT_RE = /פרטים בבקשה|שלח פרטים|שלחי פרטים|^אני יכול|^אני לוקח|^אני בדרך|בדרך אליהם|^אני עולה|^אני מגיע|^שלח אני|^אני פה|^יוצא|^יוצאת/i;
+
+  // Completion signals after intent
+  const COMPLETE_RE = /^בחוץ\b|^יצאנו\b|^סיימנו\b|^הוצאנו\b|^חילצנו\b|^יצא\b|^יצאה\b/i;
+
+  // Managers
+  const MANAGERS_RE = /נתי|שי כלאף|נתי.*פנתרים|שי.*פנתר|דודו\s*צדוק|דודו.*מוקד/i;
+
+  // "סאב של [שם]" / "סאב עם [שם]" — credits named person(s)
+  const SAB_OF_RE = /ס["\u05f4]?א["\u05f4]?ב(?:בה)?\s+(של|עם)\s+([^\n]+)/i;
+
+  // "ואנוכי" / "ושלי" / "ושלנו" — writer also gets credit
+  const AND_ME_RE = /ו(אנוכי|שלי|שלנו)\b/i;
+
+  // "הבן היקר" / "הבן שלי" = יאיר כלאף (שי's son)
+  const SON_RE = /הבן\s+(היקר|שלי)/i;
+  const SON_NAME = 'יאיר כלאף';
+
+  // Bystander rescue
+  const BYSTANDER_RE = /חולצ[הו]\s+(על\s+ידי\s+|ע["״]י\s+)(עובר\s+אורח|מקומי|אזרח|בן\s+מקום)|עובר\s+אורח\s+עזר|מישהו\s+מקומי\s+עזר/i;
+
+  // Late report patterns — "חוב מהעבר" / "שכח לכתוב סאב"
+  const LATE_REPORT_RE = /חוב\s+(מה)?עבר|חוב\s+מאתמול|שכח\s+לכתוב\s+סאב/i;
+
+  // "נלקח ע"י [שם]" — taken by someone, wait for SAB confirmation
+  const TAKEN_BY_RE = /נלקח\s+ע["״]י\s+(.+)/i;
+
+  const DISPATCHERS = /מוקד|שי כלאף|נתי.*פנתרים|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
+
+  // Helper: extract credited names from SAB_OF match
+  function extractCreditedNames(sabText, writerName) {
+    let names = [];
+    // Remove praise words
+    const clean = sabText.replace(/האלוף|הצדיק|המלך|היקר|הבן שלנו|חביב/gi,'').trim();
+    // Split by common separators
+    const parts = clean.split(/\s+ו\s*@?|\s*,\s*|\s+@/);
+    parts.forEach(p => {
+      p = p.replace(/^@[\u200f\u200e⁨⁩~]*/,'').replace(/[\u200f\u200e⁨⁩~]/g,'').trim();
+      if (p.length > 1) names.push(p);
+    });
+    // Check for "הבן היקר/שלי" → יאיר כלאף
+    if (SON_RE.test(sabText)) names.push(SON_NAME);
+    // Check for "ואנוכי/ושלי/ושלנו" → add writer
+    if (AND_ME_RE.test(sabText)) names.push(cleanName(writerName));
+    return names.filter(n => n.length > 1);
+  }
+
+  const calls = [], volunteers = {}, regions = {};
+
+  for (let i=0; i<filtered.length; i++) {
+    const msg = filtered[i];
+    const body = msg.body.replace(/\*/g,'');
+    if (!CALL_RE.exec(body)) continue;
+
+    const regionMatch = body.match(CALL_REGION_RE);
+    const region = regionMatch ? normalizeRegion(regionMatch[1]) : 'לא ידוע';
+
+    const bodyLines = body.split('\n').map(l=>l.replace(/\*/g,'').trim()).filter(l=>l);
+    let location='', vehicle='', callType='';
+    for (const l of bodyLines) {
+      if (l.match(/מוקד/i)) continue;
+      if (!location && !l.match(/סיוע|משיכה|4x4|4×4/i) && l.length>3) location=l;
+      else if (l.match(/סיוע|משיכה/i)) {
+        const parts=l.split(/סיוע/i);
+        if(parts[0].trim()) vehicle=parts[0].trim();
+        callType='סיוע'+(parts[1]||'');
+      }
+    }
+    if (!location) continue;
+
+    // Find in global messages for cross-boundary look-ahead
+    const globalIdx = messages.findIndex(m=>m.dateStr===msg.dateStr&&m.timeStr===msg.timeStr&&m.sender===msg.sender);
+
+    let handler='', status='open', closingNote='', intentCandidate='', intentSender='', handlerIsSingle=false;
+    const lookEnd = Math.min(globalIdx+70, messages.length);
+
+    for (let j=globalIdx+1; j<lookEnd; j++) {
+      const next = messages[j];
+      const nb = next.body.replace(/\*/g,'').trim();
+
+      // "סאב של/עם [שם]" — credits named person(s), highest priority
+      const sabOfMatch = SAB_OF_RE.exec(nb);
+      if (sabOfMatch) {
+        const sabText = sabOfMatch[2] || '';
+        const creditedNames = extractCreditedNames(sabText, next.sender);
+        // Also add writer if "עם" (together with)
+        if (sabOfMatch[1] === 'עם') creditedNames.push(cleanName(next.sender));
+        status = 'sab';
+        handler = creditedNames.length > 0 ? creditedNames.join(', ') : (intentCandidate || next.sender);
+        closingNote = nb.split('\n')[0].trim().substring(0, 60);
+        break;
+      }
+
+      // Late report: "חוב מהעבר" + names — credits those names
+      if (LATE_REPORT_RE.exec(nb)) {
+        const creditedNames = extractCreditedNames(nb.replace(LATE_REPORT_RE,''), next.sender);
+        if (creditedNames.length > 0) {
+          status = 'sab';
+          handler = creditedNames.join(', ');
+          closingNote = nb.split('\n')[0].trim().substring(0, 60);
+          break;
+        }
+      }
+
+      // Bystander rescue — cancelled
+      if (BYSTANDER_RE.exec(nb)) {
+        status = 'cancelled';
+        closingNote = 'חולץ ע"י עובר אורח';
+        handler = '';
+        break;
+      }
+
+      // External unit (סגמ לביא etc.) — external credit
+      const extMatch = EXTERNAL_UNIT_RE.exec(nb);
+      if (extMatch && SAB_RE.exec(nb)) {
+        status = 'cancelled';
+        closingNote = 'חולץ ע"י גורם חיצוני: ' + extMatch[0].trim().substring(0,30);
+        handler = '';
+        break;
+      }
+
+      // Stop if new call begins (with grace period)
+      if (j > globalIdx+3 && CALL_RE.exec(nb)) break;
+
+      // Track intent candidate (first non-dispatcher who expressed willingness)
+      if (!intentCandidate && INTENT_RE.exec(nb) && next.sender!==msg.sender && !DISPATCHERS.exec(next.sender)) {
+        intentCandidate = next.sender;
+        intentSender = next.sender;
+      }
+
+      // "נלקח ע"י [שם]" — update intent candidate
+      const takenMatch = TAKEN_BY_RE.exec(nb);
+      if (takenMatch && MANAGERS_RE.exec(next.sender)) {
+        const takenName = takenMatch[1].replace(/^@[\u200f\u200e⁨⁩~]*/,'').replace(/[\u200f\u200e⁨⁩~]/g,'').trim();
+        if (takenName.length > 1) intentCandidate = takenName;
+      }
+
+      // "Transferred to district"
+      if (TRANSFER_RE.exec(nb)) {
+        status = 'transferred';
+        closingNote = 'הועבר למחוזי';
+        handler = '';
+        break;
+      }
+
+      // Someone else helped
+      if (OTHER_HELPED_RE.exec(nb)) {
+        status = 'cancelled';
+        closingNote = nb.split('\n')[0].trim().substring(0, 60);
+        handler = '';
+        break;
+      }
+
+      // SAB written by volunteer themselves (or by anyone)
+      if (SAB_RE.exec(nb)) {
+        status = 'sab';
+        const nbFirst = nb.split('\n')[0].trim();
+
+        // Check if it contains a cancellation reason — then it's NOT a sab
+        const mechRe = /חולץ\s+ע["״]י\s+מכונא|מכונאי\s+שהזמין/i;
+        const selfRe = /הסתדר\s+לבד|יצא\s+לבד/i;
+        if (mechRe.test(nb)) { status='cancelled'; closingNote='חולץ ע"י מכונאי'; handler=''; break; }
+        if (selfRe.test(nb)) { status='cancelled'; closingNote='הסתדר לבד'; handler=''; break; }
+        if (BYSTANDER_RE.test(nb)) { status='cancelled'; closingNote='חולץ ע"י עובר אורח'; handler=''; break; }
+
+        if (!DISPATCHERS.exec(next.sender)) {
+          // Volunteer wrote SAB/סיום/חולץ טלפוני — credit them
+          handler = cleanName(next.sender);
+          handlerIsSingle = true; // sender name — never split by comma
+          // Check if they also mention others
+          const sabOfInline = SAB_OF_RE.exec(nb);
+          if (sabOfInline) {
+            const creditedNames = extractCreditedNames(sabOfInline[2]||'', next.sender);
+            if (sabOfInline[1] === 'עם') creditedNames.push(cleanName(next.sender));
+            if (creditedNames.length > 0) { handler = creditedNames.join('|'); handlerIsSingle = false; }
+          }
+        } else if (intentCandidate) {
+          handler = intentCandidate;
+          handlerIsSingle = true;
+        } else {
+          handler = intentCandidate || cleanName(next.sender);
+          handlerIsSingle = true;
+        }
+        closingNote = nbFirst.substring(0, 60);
+        break;
+      }
+
+      // Completion word after intent
+      if (COMPLETE_RE.exec(nb) && intentCandidate && next.sender === intentCandidate) {
+        status = 'sab';
+        handler = intentCandidate;
+        closingNote = nb.split('\n')[0].trim().substring(0, 60);
+        break;
+      }
+
+      // General end-of-call
+      if (END_RE.exec(nb)) {
+        status = 'cancelled';
+        closingNote = nb.split('\n')[0].trim().substring(0, 60);
+        handler = '';
+        break;
+      }
+    }
+
+    // Secondary pass: catch standalone סיום / חולץ patterns
+    if (status==='open') {
+      for (let j=globalIdx+1; j<Math.min(globalIdx+20,messages.length); j++) {
+        const nb = messages[j].body.replace(/\*/g,'').trim();
+        if (j > globalIdx+3 && CALL_RE.exec(nb)) break;
+        if (TRANSFER_RE.exec(nb)) { status='transferred'; closingNote='הועבר למחוזי'; break; }
+        if (/^סיום[\s\.]?$|^חולץ/.test(nb)) {
+          status='cancelled';
+          closingNote = nb.substring(0,60);
+          break;
+        }
+      }
+    }
+
+    const callIndex = calls.length;
+    const hClean = handler ? cleanName(handler) : '';
+    calls.push({ index:callIndex, date:msg.dateStr, time:msg.timeStr, region, location:location.substring(0,65), vehicle:vehicle.substring(0,30), callType:callType||'סיוע משיכה', handler, handlerClean:hClean, handlerIsSingle, status, closingNote, dayName:dayHe(msg.date), origStatus:status, origHandlerClean:hClean });
+
+    // Add all participants to vol database — from ENTIRE file (no date filter)
+    [msg, ...messages.slice(globalIdx+1, Math.min(globalIdx+30,messages.length))].forEach(m => {
+      const n = cleanName(m.sender);
+      if (n && !DISPATCHERS.exec(m.sender) && n.length > 2) volDatabase.add(n);
+    });
+
+    if (status==='sab' && hClean) {
+      if (!volunteers[hClean]) volunteers[hClean]={count:0,region,callIndices:[]};
+      volunteers[hClean].count++;
+      volunteers[hClean].callIndices.push(callIndex);
+    }
+    if (!regions[region]) regions[region]={total:0,sab:0};
+    regions[region].total++;
+    if (status==='sab') regions[region].sab++;
+  }
+
+  saveStorage();
+  return { calls, volunteers, regions };
+}
+
+function cleanName(name) {
+  if (!name) return '';
+  return name
+    .replace(/^~ /,'')
+    .replace(/\[\d{1,2}:\d{2}:\d{2}\]\s*/,'')  // remove [12:37:31]
+    .replace(/[-–]\s*(פנתר|ידידים|מוקד|סגן|מבצעי|יחידת|אחמ"ש|אחמש).*$/i,'')
+    .replace(/\s+\d{3,}$/,'')
+    .replace(/[\u200f\u200e⁨⁩]/g,'')
+    .trim();
+}
+
+function isDispatcherName(name) {
+  return /מוקד|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|ידידים\s+סיוע\s+בדרכים/i.test(name);
+}
+function dayHe(d) { return ["יום א","יום ב","יום ג","יום ד","יום ה","יום ו","שבת"][d.getDay()]; }
+
+// ===================== ANALYZE =====================
+function analyze() {
+  let s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
+  if (!s || !e) {
+    // Use default dates from file
+    const dates = extractDates(rawText).sort((a,b)=>a-b);
+    if (dates.length) {
+      const last = dates[dates.length-1];
+      s = fmtDate(getWeekStartSunday(last));
+      e = fmtDate(getWeekEndSaturday(last));
+      document.getElementById('weekStart').value = s;
+      document.getElementById('weekEnd').value = e;
+    }
+  }
+  if(s) { calState.selectedStart=new Date(s); document.getElementById('btnStart').textContent='📅 '+formatDisplayDate(new Date(s)); }
+  if(e) { calState.selectedEnd=new Date(e); document.getElementById('btnEnd').textContent='📅 '+formatDisplayDate(new Date(e)); }
+  parsedData = parseWhatsApp(rawText, s?new Date(s):null, e?new Date(e):null);
+  renderDashboard(s,e);
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  renderVolDb();
+  if (driveAccessToken) {
+    saveChatToDrive(rawText);
+    savePhonebookToDrive();
+  }
+}
+
+// ===================== CHAT VIEWER =====================
+// Long press for mobile chat open
+let longPressTimer = null;
+function handleCallTouchStart(event, callIndex) {
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null;
+    openChatViewer(callIndex);
+  }, 500);
+}
+function handleCallTouchEnd() {
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+}
+function handleCallClick(event, callIndex) {
+  // Desktop double-click only — handled by ondblclick
+  // Mobile uses long press via touch events
+}
+
+function openChatViewer(callIndex) {
+  const c = parsedData.calls[callIndex];
+  const lines = rawText.split('\n');
+  const msgRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
+  const allMsgs = [];
+  let cur = null;
+  for (const line of lines) {
+    const m = msgRe.exec(line);
+    if (m) {
+      if (cur) allMsgs.push(cur);
+      cur = {
+        dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`,
+        timeStr:`${m[4].padStart(2,'0')}:${m[5]}`,
+        sender:m[6].replace(/^~ /,'').trim(),
+        body:m[7].trim()
+      };
+    } else if (cur) cur.body += '\n' + line;
+  }
+  if (cur) allMsgs.push(cur);
+
+  // Find the exact call message
+  const callMsgIdx = allMsgs.findIndex(m => m.dateStr===c.date && m.timeStr===c.time);
+  if (callMsgIdx < 0) { alert('לא נמצאה ההודעה בקובץ'); return; }
+
+  document.getElementById('chatModalTitle').textContent = `📍 ${c.location}`;
+  document.getElementById('chatModalSub').textContent = `${c.date} · ${c.time} · מרחב ${c.region}`;
+
+  // Render ALL messages (with date separators)
+  let html = '';
+  let lastDate = '';
+  allMsgs.forEach((msg, idx) => {
+    // Date separator
+    if (msg.dateStr !== lastDate) {
+      lastDate = msg.dateStr;
+      html += `<div style="text-align:center;margin:10px 0;"><span style="background:rgba(0,0,0,0.12);color:#555;font-size:11px;padding:3px 10px;border-radius:10px;">${msg.dateStr}</span></div>`;
+    }
+
+    const isCallMsg = idx === callMsgIdx;
+    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
+    const senderClean = cleanName(msg.sender);
+    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
+
+    if (isSystem) {
+      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
+      return;
+    }
+
+    const bubbleStyle = isCallMsg
+      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
+      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+
+    html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
+      <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
+        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
+        <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
+        <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('chatBody').innerHTML = html;
+  document.getElementById('chatOverlay').classList.add('open');
+
+  // Scroll to call message
+  setTimeout(() => {
+    const target = document.getElementById(`chatmsg-${callMsgIdx}`);
+    if (target) {
+      target.scrollIntoView({ block: 'center' });
+      target.style.outline = '2px solid var(--orange)';
+      target.style.borderRadius = '6px';
+      setTimeout(() => { target.style.outline = ''; }, 2500);
+    }
+  }, 80);
+}
+
+function closeChatModal(e) {
+  if(e&&e.target!==document.getElementById('chatOverlay')) return;
+  document.getElementById('chatOverlay').classList.remove('open');
+}
+
+// ===================== RENDER DASHBOARD =====================
+function renderDashboard(s,e) {
+  const {calls, regions} = parsedData;
+  // We rebuild volunteers fresh every render to correctly handle additions AND removals
+  const volunteers = {};
+
+  // Sync mobile date inputs
+  const ms = document.getElementById('mobileStartDate');
+  const me = document.getElementById('mobileEndDate');
+  if (ms && s) ms.value = s;
+  if (me && e) me.value = e;
+
+  // Apply manual assignments and rebuild volunteer counts from scratch
+  calls.forEach(c => {
+    // Always reset to original parsed values first
+    c.status = c.origStatus;
+    c.handlerClean = c.origHandlerClean;
+
+    if (manualAssignments[c.index] !== undefined) {
+      const assignment = manualAssignments[c.index];
+      c.handlerClean = assignment;
+      if (!assignment) {
+        c.status = c.origStatus;
+      } else {
+        c.status = 'sab';
+      }
+    }
+
+    // Apply manual status override (e.g. cancelled manually)
+    if (manualStatuses[c.index] !== undefined) {
+      c.status = manualStatuses[c.index];
+      if (c.status !== 'sab') c.handlerClean = '';
+    }
+
+    // Apply manual closing note
+    if (manualNotes[c.index] !== undefined) {
+      c.closingNote = manualNotes[c.index];
+    }
+    // Count volunteers — use | separator for multiple handlers, single name otherwise
+    if (c.status === 'sab' && c.handlerClean) {
+      const names = c.handlerIsSingle 
+        ? [c.handlerClean]  // single person — never split
+        : c.handlerClean.split('|').map(n => n.trim()).filter(Boolean);
+      names.forEach(name => {
+        if (!volunteers[name]) volunteers[name] = {count:0, region:c.region, callIndices:[]};
+        if (!volunteers[name].callIndices.includes(c.index)) {
+          volunteers[name].count++;
+          volunteers[name].callIndices.push(c.index);
+        }
+      });
+    }
+  });
+
+  const sab=calls.filter(c=>c.status==='sab');
+
+  // Dynamic section title based on date range
+  const daysDiff = (s && e) ? Math.round((new Date(e)-new Date(s))/(1000*60*60*24))+1 : 0;
+  let sectionTitle = 'קריאות';
+  if (daysDiff <= 7) sectionTitle = 'קריאות השבוע';
+  else if (daysDiff <= 31) sectionTitle = 'קריאות החודש';
+  else sectionTitle = `קריאות התקופה`;
+  if (s && e) sectionTitle += ` · ${s.split('-').reverse().join('.')}–${e.split('-').reverse().join('.')}`;
+  const titleEl = document.getElementById('callsSectionTitle');
+  if (titleEl) titleEl.textContent = sectionTitle;
+
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-card" style="animation-delay:0s"><div class="stat-num">${calls.length}</div><div class="stat-label">סה"כ קריאות</div><div class="stat-emoji">📞</div></div>
+    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${sab.length}</div><div class="stat-label">חולצו בהצלחה (סא"ב)</div><div class="stat-emoji">✅</div></div>
+    <div class="stat-card purple" style="animation-delay:0.14s"><div class="stat-num">${Object.keys(volunteers).length}</div><div class="stat-label">כוננים פעילים</div><div class="stat-emoji">👥</div></div>`;
+
+  document.getElementById('callsBadge').textContent=`${calls.length} קריאות`;
+  document.getElementById('callsList').innerHTML = calls.length
+    ? calls.map((c,i)=>callRowHtml(c,i)).join('')
+    : '<div class="empty-msg">לא נמצאו קריאות</div>';
+
+  const vs=Object.entries(volunteers).sort((a,b)=>b[1].count-a[1].count);
+  document.getElementById('volBadge').textContent=`${vs.length} כוננים`;
+  const medals=['🥇','🥈','🥉'];
+  document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>`
+    <div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
+      <div class="vol-rank">${medals[i]||i+1}</div>
+      <div class="vol-avatar av${i%8}">${name.charAt(0)}</div>
+      <div class="vol-info"><div class="vol-name">${name}</div><div class="vol-sub">לחץ לצפייה</div></div>
+      <div class="vol-count">${data.count}</div>
+    </div>`).join(''):'<div class="empty-msg">לא זוהו כוננים</div>';
+
+  const maxT=Math.max(...Object.values(regions).map(r=>r.total),1);
+  document.getElementById('regionBadge').textContent=`${Object.keys(regions).length} אזורים`;
+  document.getElementById('regionsGrid').innerHTML=Object.entries(regions).sort((a,b)=>b[1].total-a[1].total).map(([n,d],i)=>`
+    <div class="region-card">
+      <div class="region-name">מרחב ${n}</div>
+      <div class="region-bar-wrap"><div class="region-bar rc${i%5}" style="width:${Math.round(d.total/maxT*100)}%"></div></div>
+      <div class="region-nums"><strong>${d.total}</strong> קריאות · <strong>${d.sab}</strong> חולצו</div>
+    </div>`).join('');
+
+  // Populate search region dropdown
+  const sel=document.getElementById('searchRegion');
+  sel.innerHTML='<option value="">כל האזורים</option>'+Object.keys(regions).sort().map(r=>`<option value="${r}">מרחב ${r}</option>`).join('');
+}
+
+function callRowHtml(c,i) {
+  const cancelReason = c.closingNote ? formatCancelReason(c.closingNote) : '';
+
+  const statusBadge = c.status==='sab'
+    ? '<span class="status-sab">סא"ב ✓</span>'
+    : c.status==='cancelled'
+      ? '<span class="status-cancelled">בוטל</span>'
+      : c.status==='transferred'
+        ? '<span class="status-transferred">📋 הועבר למחוזי</span>'
+        : '<span class="status-open">⚠ לא שוייך לכונן</span>';
+
+  const cancelLine = (c.status==='cancelled' || c.status==='transferred') && cancelReason
+    ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+        ↩ <span class="cancel-reason-text" onclick="event.stopPropagation();editCancelReason(${c.index})" title="לחץ לעריכה" style="cursor:pointer;border-bottom:1px dashed var(--text-muted);">${cancelReason}</span>
+        <span style="font-size:10px;opacity:0.5;margin-right:2px;">✏️</span>
+      </div>`
+    : c.status==='cancelled'
+      ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+          <span class="cancel-reason-text" onclick="event.stopPropagation();editCancelReason(${c.index})" title="לחץ להוספת סיבה" style="cursor:pointer;border-bottom:1px dashed var(--text-muted);">+ הוסף סיבה</span>
+         </div>`
+      : '';
+
+  const handlerLine = c.handlerClean
+    ? `<div class="handler-name">
+        🙋 טיפל בקריאה:
+        <button class="handler-edit-btn" onclick="event.stopPropagation();openAssign(${c.index})"><strong>${c.handlerClean}</strong></button>
+        <button class="btn-add-handler" onclick="event.stopPropagation();openAssign(${c.index})" title="הוסף כונן נוסף">+</button>
+        <span class="handler-edit-hint">· לחץ לשינוי</span>
+      </div>`
+    : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-assign" onclick="event.stopPropagation();openAssign(${c.index})">+ שייך כונן</button>
+        ${c.status==='open' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualCancel(${c.index})">✕ סמן כבוטל</button>` : ''}
+        ${c.status==='cancelled' && manualStatuses[c.index]==='cancelled' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualUncancel(${c.index})" style="background:rgba(39,174,96,0.12);color:var(--green);">↩ בטל ביטול</button>` : ''}
+      </div>`;
+
+  const isMuted = c.status==='cancelled' || c.status==='transferred';
+  const rowClass = isMuted ? 'call-row is-cancelled' : 'call-row';
+
+  return `<div class="${rowClass}" id="call-${c.index}" ondblclick="openChatViewer(${c.index})" title="לחץ פעמיים לצפייה בשיחה">
+    <div class="call-idx">${i+1}</div>
+    <div>
+      <div class="call-loc">📍 ${c.location}</div>
+      <div class="call-meta">
+        <span>מרחב ${c.region}</span>
+        ${c.vehicle?`<span>${c.vehicle}</span>`:''}
+      </div>
+      ${handlerLine}
+      ${cancelLine}
+      <button class="btn-chat-view" onclick="event.stopPropagation();openChatViewer(${c.index})">💬 צפה בשיחה</button>
+    </div>
+    <div class="call-right">
+      <div class="call-date">${c.date}</div>
+      <div class="call-time">${c.dayName}׳ ${c.time}</div>
+      ${statusBadge}
+    </div>
+  </div>`;
+}
+
+function formatCancelReason(note) {
+  const n = note.trim();
+  if (/הועבר למחוזי|נלקח במחוזי|מחוזי/i.test(n)) return 'הועבר למחוזי';
+  if (/מישהו שם חילץ|מישהו עזר|חילצו אותו|עזרה מקומית/i.test(n)) return 'חולץ ע"י אחר';
+  if (/עובר אורח/i.test(n)) return 'חולץ ע"י עובר אורח';
+  if (/הסתדר לבד|הסתדרו לבד/i.test(n)) return 'הסתדרו לבד';
+  if (/יצא לבד|יצאו לבד/i.test(n)) return 'יצא לבד';
+  if (/חולץ.*טלפונית/i.test(n)) return 'חולץ טלפונית';
+  if (/חולץ.*חבר/i.test(n)) return 'חולץ ע"י חבר';
+  if (/חולץ.*מכונא/i.test(n)) return 'חולץ ע"י מכונאי';
+  if (/סיום/i.test(n)) return 'סיום';
+  if (/בוטל|ביטל/i.test(n)) return 'בוטל';
+  return n.substring(0, 30);
+}
+
+// ===================== SEARCH =====================
+function switchTab(tab) {
+  ['dash','search','vols'].forEach(t=>{
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display=t===tab?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='search') doSearch();
+  if(tab==='vols') renderVolDb();
+}
+// Fix tab IDs
+function switchTab(tab) {
+  document.getElementById('tabDash').style.display=tab==='dash'?'block':'none';
+  document.getElementById('tabSearch').style.display=tab==='search'?'block':'none';
+  document.getElementById('tabVols').style.display=tab==='vols'?'block':'none';
+  document.getElementById('tab-dash').classList.toggle('active',tab==='dash');
+  document.getElementById('tab-search').classList.toggle('active',tab==='search');
+  document.getElementById('tab-vols').classList.toggle('active',tab==='vols');
+  if(tab==='search') doSearch();
+  if(tab==='vols') renderVolDb();
+}
+
+function doSearch() {
+  const {calls}=parsedData;
+  const q=(document.getElementById('searchText').value||'').toLowerCase().trim();
+  const rf=document.getElementById('searchRegion').value;
+  const sf=document.getElementById('searchStatus').value;
+  const res=calls.filter(c=>{
+    if(rf&&c.region!==rf) return false;
+    if(sf&&c.status!==sf) return false;
+    if(q&&!`${c.location} ${c.vehicle} ${c.handlerClean} ${c.region} ${c.date}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  document.getElementById('searchCount').textContent=`נמצאו ${res.length} קריאות`;
+  document.getElementById('searchResults').innerHTML=res.length
+    ? res.map((c,i)=>callRowHtml(c,i)).join('')
+    : '<div class="empty-msg">לא נמצאו תוצאות</div>';
+}
+
+// ===================== VOLUNTEERS DB =====================
+function renderVolDb() {
+  const q=(document.getElementById('volDbSearch')||{value:''}).value.toLowerCase();
+  const vols=[...volDatabase].filter(v=>!q||v.toLowerCase().includes(q)).sort();
+  document.getElementById('volDbBadge').textContent=`${volDatabase.size} כוננים`;
+  document.getElementById('volDbList').innerHTML=vols.length?vols.map(v=>`
+    <div style="padding:12px 20px;border-bottom:1px solid var(--bg);display:flex;align-items:center;">
+      <div style="font-size:14px;font-weight:600">🙋 ${v}</div>
+    </div>`).join(''):'<div class="empty-msg">אין כוננים במאגר</div>';
+}
+
+function addVolManual() {
+  const name=prompt('שם הכונן:');
+  if(name&&name.trim()) { volDatabase.add(name.trim()); saveAll(); renderVolDb(); }
+}
+function removeVol(name) {
+  volDatabase.delete(name); saveAll(); renderVolDb();
+}
+
+// ===================== ASSIGN =====================
+let pendingHandlers = []; // array of names for current assignment
+
+function editCancelReason(callIndex) {
+  const c = parsedData.calls[callIndex];
+  const current = manualNotes[callIndex] || c.closingNote || '';
+  const newNote = prompt('עריכת סיבת סיום:', current);
+  if (newNote === null) return; // cancelled
+  manualNotes[callIndex] = newNote.trim();
+  saveAll();
+  const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
+  renderDashboard(s,e);
+}
+
+function manualCancel(callIndex) {
+  manualStatuses[callIndex] = 'cancelled';
+  manualNotes[callIndex] = manualNotes[callIndex] || 'בוטל ידנית';
+  delete manualAssignments[callIndex];
+  saveAll();
+  const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
+  renderDashboard(s,e);
+}
+
+function manualUncancel(callIndex) {
+  delete manualStatuses[callIndex];
+  saveAll();
+  const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
+  renderDashboard(s,e);
+}
+
+function openAssign(callIndex) {
+  assigningCallIndex = callIndex;
+  const c = parsedData.calls[callIndex];
+  document.getElementById('assignCallInfo').innerHTML = `<strong>📍 ${c.location}</strong><br>מרחב ${c.region} · ${c.date} ${c.time}`;
+  document.getElementById('assignInput').value = '';
+  acSelectedIdx = -1;
+  // Load existing handlers as tags
+  const existing = manualAssignments[callIndex] || c.handlerClean || '';
+  pendingHandlers = existing ? existing.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  renderHandlerTags();
+  updateAcList('');
+  document.getElementById('assignOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('assignInput').focus(), 100);
+}
+
+function renderHandlerTags() {
+  document.getElementById('handlerTags').innerHTML = pendingHandlers.length
+    ? pendingHandlers.map((name,i) =>
+        `<div class="handler-tag">🙋 ${name}<button type="button" onmousedown="event.preventDefault();event.stopPropagation();removeHandlerTag(${i})" ontouchend="event.preventDefault();removeHandlerTag(${i})">×</button></div>`
+      ).join('')
+    : '<span style="font-size:13px;color:var(--text-muted)">אין כוננים משויכים</span>';
+}
+
+function removeHandlerTag(i) {
+  pendingHandlers.splice(i, 1);
+  renderHandlerTags();
+}
+
+function selectVol(name) {
+  if (!pendingHandlers.includes(name)) {
+    pendingHandlers.push(name);
+    renderHandlerTags();
+  }
+  document.getElementById('assignInput').value = '';
+  document.getElementById('assignList').innerHTML = '';
+  acSelectedIdx = -1;
+  document.getElementById('assignInput').focus();
+}
+
+function onAssignInput() {
+  updateAcList(document.getElementById('assignInput').value);
+}
+
+function updateAcList(q) {
+  const lq = q.toLowerCase();
+  const matches=[...volDatabase].filter(v=>v.toLowerCase().includes(lq)).sort().slice(0,8);
+  document.getElementById('assignList').innerHTML=matches.map((v,i)=>`
+    <div class="autocomplete-item${i===acSelectedIdx?' selected':''}" onmousedown="selectVol('${v.replace(/'/g,"\\'")}')">${v}</div>`).join('');
+  document.getElementById('assignList').style.display=matches.length?'block':'none';
+}
+
+function onAssignKey(e) {
+  const items=document.querySelectorAll('.autocomplete-item');
+  if(e.key==='ArrowDown'){acSelectedIdx=Math.min(acSelectedIdx+1,items.length-1);updateAcList(document.getElementById('assignInput').value);}
+  else if(e.key==='ArrowUp'){acSelectedIdx=Math.max(acSelectedIdx-1,-1);updateAcList(document.getElementById('assignInput').value);}
+  else if(e.key==='Enter'){if(acSelectedIdx>=0&&items[acSelectedIdx]){selectVol(items[acSelectedIdx].textContent);}else{confirmAssign();}}
+  else if(e.key==='Escape'){closeAssign();}
+}
+
+function confirmAssign() {
+  const typed = document.getElementById('assignInput').value.trim();
+  if (typed && !pendingHandlers.includes(typed)) pendingHandlers.push(typed);
+  // Allow empty = clear all handlers
+  const combined = pendingHandlers.join(', ');
+  manualAssignments[assigningCallIndex] = combined;
+  pendingHandlers.forEach(n => volDatabase.add(n));
+  saveAll();
+  closeAssign();
+  const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
+  renderDashboard(s,e);
+}
+
+function closeAssign() {
+  document.getElementById('assignOverlay').classList.remove('open');
+  document.getElementById('assignList').style.display='none';
+}
+
+// ===================== VOL CALLS MODAL =====================
+function showVolCalls(name, indices) {
+  const {calls} = parsedData;
+  const volCalls = indices.map(idx => calls[idx]);
+  const sabCount = volCalls.filter(c => c.status==='sab').length;
+  const regions = [...new Set(volCalls.map(c => c.region))].join(', ');
+
+  document.getElementById('volModalTitle').innerHTML = `🙋 ${name}`;
+  document.getElementById('volModalSummary').innerHTML = `
+    <div style="flex:1;text-align:center;background:white;border-radius:10px;padding:10px;box-shadow:var(--shadow)">
+      <div style="font-size:24px;font-weight:700;color:var(--orange)">${indices.length}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">קריאות</div>
+    </div>
+    <div style="flex:1;text-align:center;background:white;border-radius:10px;padding:10px;box-shadow:var(--shadow)">
+      <div style="font-size:24px;font-weight:700;color:var(--green)">${sabCount}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">סא"ב</div>
+    </div>
+    <div style="flex:2;text-align:center;background:white;border-radius:10px;padding:10px;box-shadow:var(--shadow)">
+      <div style="font-size:13px;font-weight:600;color:var(--blue-mid);line-height:1.3">${regions||'—'}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">אזורים</div>
+    </div>
+  `;
+
+  document.getElementById('volModalBody').innerHTML = volCalls.map((c, i) => {
+    const statusBadge = c.status==='sab'
+      ? `<span style="font-size:11px;font-weight:700;color:var(--green);background:rgba(39,174,96,0.1);padding:2px 8px;border-radius:5px">סא"ב ✓</span>`
+      : c.status==='transferred'
+      ? `<span style="font-size:11px;font-weight:700;color:var(--purple);background:rgba(155,89,182,0.1);padding:2px 8px;border-radius:5px">מחוזי</span>`
+      : `<span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--bg);padding:2px 8px;border-radius:5px">בוטל</span>`;
+    return `<div class="modal-call-row" onclick="scrollToCall(${indices[i]})">
+      <div class="modal-num">${i+1}</div>
+      <div>
+        <div class="modal-loc">📍 ${c.location}</div>
+        <div class="modal-meta">מרחב ${c.region}${c.vehicle?' · '+c.vehicle:''} · ${c.date} ${c.time}</div>
+        <div style="margin-top:4px">${statusBadge}</div>
+      </div>
+      <div class="modal-time" style="font-size:11px;color:var(--text-muted);text-align:left;white-space:nowrap">${c.dayName}<br>${c.time}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('volOverlay').classList.add('open');
+}
+
+function closeVolModal(e) {
+  if(e&&e.target!==document.getElementById('volOverlay')) return;
+  document.getElementById('volOverlay').classList.remove('open');
+}
+
+function scrollToCall(idx) {
+  document.getElementById('volOverlay').classList.remove('open');
+  switchTab('dash');
+  setTimeout(()=>{
+    const el=document.getElementById(`call-${idx}`);
+    if(el){
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+      el.style.background='rgba(232,115,42,0.15)';
+      el.style.transition='background 0.3s';
+      setTimeout(()=>el.style.background='',2500);
+    }
+  }, 350);
+}
+
+function goBack() {
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('uploadScreen').style.display='flex';
+}
+
+// Sunday = first day of week helper
+function getWeekStartSunday(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun
+  d.setDate(d.getDate() - day);
+  return d;
+}
+function getWeekEndSaturday(date) {
+  const d = getWeekStartSunday(date);
+  d.setDate(d.getDate() + 6);
+  return d;
+}
+
+// Default dates — snap to current week Sun–Sat
+const today=new Date();
+const defStart = getWeekStartSunday(today);
+const defEnd = getWeekEndSaturday(today);
+document.getElementById('weekEnd').value=fmtDate(defEnd);
+document.getElementById('weekStart').value=fmtDate(defStart);
+
+// ===================== CUSTOM CALENDAR =====================
+function capitalize(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// State
+let calState = {
+  which: null,          // 'start' | 'end'
+  viewYear: 0,
+  viewMonth: 0,
+  selectedStart: null,  // Date
+  selectedEnd: null,    // Date
+};
+
+const HE_MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const HE_DAYS = ['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳']; // Sun=0 → א׳
+
+function toggleCal(which) {
+  const popupId = 'cal'+capitalize(which);
+  const popup = document.getElementById(popupId);
+  const btnId = 'btn'+capitalize(which);
+  if (!popup) return;
+  const isOpen = popup.classList.contains('open');
+  closeAllCals();
+  if (isOpen) return;
+  calState.which = which;
+  const ref = which==='start' ? calState.selectedStart : calState.selectedEnd;
+  const base = ref || new Date();
+  calState.viewYear = base.getFullYear();
+  calState.viewMonth = base.getMonth();
+  renderCal(which, popupId, btnId);
+  popup.classList.add('open');
+  if (window.innerWidth <= 640) showCalBackdrop();
+}
+
+function toggleUploadCal(which) {
+  const popupId = 'calUpload'+capitalize(which);
+  const popup = document.getElementById(popupId);
+  const btnId = 'btnUpload'+capitalize(which);
+  const btn = document.getElementById(btnId);
+  if (!popup || !btn) return;
+  const isOpen = popup.classList.contains('open');
+  closeAllCals();
+  if (isOpen) return;
+  calState.which = 'upload-'+which;
+  const ref = which==='start' ? calState.selectedStart : calState.selectedEnd;
+  const base = ref || new Date();
+  calState.viewYear = base.getFullYear();
+  calState.viewMonth = base.getMonth();
+  renderCal('upload-'+which, popupId, btnId);
+  // Position using fixed coordinates relative to button
+  const rect = btn.getBoundingClientRect();
+  popup.style.top = (rect.bottom + 6) + 'px';
+  popup.style.right = (window.innerWidth - rect.right) + 'px';
+  popup.style.left = 'auto';
+  popup.classList.add('open');
+  if (window.innerWidth <= 640) showCalBackdrop();
+}
+
+function showCalBackdrop() {
+  let bd = document.getElementById('calBackdrop');
+  if (!bd) {
+    bd = document.createElement('div');
+    bd.id = 'calBackdrop';
+    bd.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1100;';
+    bd.addEventListener('mousedown', () => closeAllCals());
+    bd.addEventListener('touchstart', () => closeAllCals());
+    document.body.appendChild(bd);
+  }
+  bd.style.display = 'block';
+}
+
+function closeAllCals() {
+  document.querySelectorAll('.cal-popup').forEach(p => p.classList.remove('open'));
+  const bd = document.getElementById('calBackdrop');
+  if (bd) bd.style.display = 'none';
+}
+
+// Close on outside click — use mousedown to beat the click event
+document.addEventListener('mousedown', e => {
+  document.querySelectorAll('.cal-popup.open').forEach(popup => {
+    if (!popup.contains(e.target) && !e.target.classList.contains('datepicker-display')) {
+      closeAllCals();
+    }
+  });
+});
+
+function renderCal(which, popupId, btnId) {
+  const popup = document.getElementById(popupId);
+  const y = calState.viewYear, m = calState.viewMonth;
+  const baseWhich = which.replace('upload-','');
+
+  let html = `<div class="cal-nav">
+    <button onclick="calNav(-1,'${which}','${popupId}','${btnId}')">‹</button>
+    <span class="cal-month-label">${HE_MONTHS[m]} ${y}</span>
+    <button onclick="calNav(1,'${which}','${popupId}','${btnId}')">›</button>
+  </div>
+  <div class="cal-grid">`;
+
+  HE_DAYS.forEach(d => { html += `<div class="cal-day-name">${d}</div>`; });
+
+  const firstDay = new Date(y, m, 1).getDay();
+  for (let i=0; i<firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const todayStr = fmtDate(new Date());
+
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateObj = new Date(y, m, d);
+    const dateStr = fmtDate(dateObj);
+    const isToday = dateStr === todayStr;
+    const isStart = calState.selectedStart && fmtDate(calState.selectedStart)===dateStr;
+    const isEnd = calState.selectedEnd && fmtDate(calState.selectedEnd)===dateStr;
+    const inRange = calState.selectedStart && calState.selectedEnd &&
+      dateObj > calState.selectedStart && dateObj < calState.selectedEnd;
+
+    let cls = 'cal-day';
+    if (isStart || isEnd) cls += ' selected';
+    else if (inRange) cls += ' in-range';
+    if (isToday) cls += ' today';
+
+    html += `<div class="${cls}" onclick="calSelectDay(${y},${m},${d},'${which}','${popupId}','${btnId}')">${d}</div>`;
+  }
+
+  html += `</div>
+  <div class="cal-footer">
+    <button class="cal-btn-today" onclick="calSelectDay(${new Date().getFullYear()},${new Date().getMonth()},${new Date().getDate()},'${which}','${popupId}','${btnId}')">היום</button>
+    <button class="cal-btn-clear" onclick="calClear('${which}','${popupId}','${btnId}')">נקה</button>
+  </div>`;
+
+  popup.innerHTML = html;
+}
+
+function calNav(dir, which, popupId, btnId) {
+  calState.viewMonth += dir;
+  if (calState.viewMonth > 11) { calState.viewMonth=0; calState.viewYear++; }
+  if (calState.viewMonth < 0)  { calState.viewMonth=11; calState.viewYear--; }
+  renderCal(which, popupId, btnId);
+}
+
+function toggleCalMobile(which) {
+  const popupId = 'cal'+capitalize(which)+'Mobile';
+  const popup = document.getElementById(popupId);
+  const btnId = 'btn'+capitalize(which)+'Mobile';
+  if (!popup) return;
+  const isOpen = popup.classList.contains('open');
+  closeAllCals();
+  if (isOpen) return;
+  calState.which = 'mobile-'+which;
+  const ref = which==='start' ? calState.selectedStart : calState.selectedEnd;
+  const base = ref || new Date();
+  calState.viewYear = base.getFullYear();
+  calState.viewMonth = base.getMonth();
+  renderCal('mobile-'+which, popupId, btnId);
+  popup.classList.add('open');
+  showCalBackdrop();
+}
+
+function calSelectDay(y, m, d, which, popupId, btnId) {
+  const date = new Date(y, m, d);
+  const baseWhich = which.replace('upload-','').replace('mobile-','');
+  const isUpload = which.startsWith('upload-');
+  const isMobile = which.startsWith('mobile-');
+  const fmt = '📅 ' + formatDisplayDate(date);
+
+  if (baseWhich==='start') {
+    calState.selectedStart = date;
+    document.getElementById('weekStart').value = fmtDate(date);
+    document.getElementById(btnId).textContent = fmt;
+    closeAllCals();
+    // Auto-open end if not set
+    if (!calState.selectedEnd || calState.selectedEnd < date) {
+      setTimeout(() => {
+        if (isUpload) toggleUploadCal('end');
+        else if (isMobile) toggleCalMobile('end');
+        else toggleCal('end');
+      }, 150);
+    }
+  } else {
+    calState.selectedEnd = date;
+    document.getElementById('weekEnd').value = fmtDate(date);
+    document.getElementById(btnId).textContent = fmt;
+    closeAllCals();
+  }
+
+  // Sync ALL date buttons
+  ['btnStart','btnUploadStart','btnStartMobile'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && baseWhich==='start') el.textContent = fmt;
+  });
+  ['btnEnd','btnUploadEnd','btnEndMobile'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && baseWhich==='end') el.textContent = fmt;
+  });
+
+  reanalyze();
+}
+
+function calClear(which, popupId, btnId) {
+  const baseWhich = which.replace('upload-','').replace('mobile-','');
+  if (baseWhich==='start') {
+    calState.selectedStart = null;
+    document.getElementById('weekStart').value = '';
+    ['btnStart','btnUploadStart','btnStartMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '📅 התחלה';
+    });
+  } else {
+    calState.selectedEnd = null;
+    document.getElementById('weekEnd').value = '';
+    ['btnEnd','btnUploadEnd','btnEndMobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '📅 סיום';
+    });
+  }
+  closeAllCals();
+}
+
+function formatDisplayDate(d) {
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+}
+
+// Initialize all calendar buttons with default dates
+calState.selectedStart = defStart;
+calState.selectedEnd = defEnd;
+['btnStart','btnUploadStart','btnStartMobile'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.textContent = '📅 ' + formatDisplayDate(defStart);
+});
+['btnEnd','btnUploadEnd','btnEndMobile'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.textContent = '📅 ' + formatDisplayDate(defEnd);
+});
+
+function onMobileDateChange() {
+  const s = document.getElementById('mobileStartDate').value;
+  const e = document.getElementById('mobileEndDate').value;
+  if (!s || !e) return;
+  document.getElementById('weekStart').value = s;
+  document.getElementById('weekEnd').value = e;
+  // sync desktop pickers
+  calState.selectedStart = new Date(s);
+  calState.selectedEnd = new Date(e);
+  const fmt = d => `📅 ${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+  ['btnStart','btnUploadStart'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=fmt(calState.selectedStart); });
+  ['btnEnd','btnUploadEnd'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=fmt(calState.selectedEnd); });
+  reanalyze();
+}
+
+function onUploadDateChange() {
+  const s = document.getElementById('uploadStartDate').value;
+  const e = document.getElementById('uploadEndDate').value;
+  if (s) document.getElementById('weekStart').value = s;
+  if (e) document.getElementById('weekEnd').value = e;
+  if (s && e) {
+    calState.selectedStart = new Date(s);
+    calState.selectedEnd = new Date(e);
+  }
+}
+
+function reanalyze() {
+  const s=document.getElementById('weekStart').value;
+  const e=document.getElementById('weekEnd').value;
+  if(!s||!e||!rawText) return;
+  parsedData = parseWhatsApp(rawText, new Date(s), new Date(e));
+  renderDashboard(s,e);
+}
+
+// ===================== GOOGLE DRIVE =====================
+const DRIVE_CLIENT_ID = '616515156131-pglvg65fnlnd8d0m7coovpsoc1a40t7v.apps.googleusercontent.com';
+const DRIVE_FOLDER_ID = '1e7pp43lBczBICozmu_c2MRLAAtW1IsYZ';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+let driveAccessToken = null;
+let driveTokenClient = null;
+let driveFileIds = {}; // cache: filename -> fileId
+let phonebook = {};   // mobileNumber/name -> displayName
+
+// ---- AUTH ----
+function initDrive() {
+  if (!window.google || !window.google.accounts) return;
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: DRIVE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: async (resp) => {
+      if (resp.error) { console.error('Drive auth error:', resp.error); return; }
+      driveAccessToken = resp.access_token;
+      updateDriveBtn(true);
+      await onDriveConnected();
+    }
+  });
+}
+
+function driveLogin() {
+  if (!driveTokenClient) { initDrive(); setTimeout(driveLogin, 800); return; }
+  if (driveAccessToken) { updateDriveBtn(true); return; }
+  driveTokenClient.requestAccessToken({ prompt: '' });
+}
+
+function updateDriveBtn(connected) {
+  const btn = document.getElementById('btnDrive');
+  if (!btn) return;
+  if (connected) { btn.textContent = '✅ Drive'; btn.classList.add('connected'); }
+  else { btn.textContent = '☁️ Drive'; btn.classList.remove('connected'); }
+}
+
+// ---- CORE DRIVE REQUESTS ----
+async function driveReq(method, url, body, contentType) {
+  if (!driveAccessToken) throw new Error('Not authenticated');
+  const headers = { 'Authorization': 'Bearer ' + driveAccessToken };
+  if (contentType) headers['Content-Type'] = contentType;
+  const res = await fetch(url, { method, headers, body });
+  if (res.status === 401) { driveAccessToken = null; updateDriveBtn(false); throw new Error('Token expired'); }
+  if (!res.ok) throw new Error('Drive error: ' + res.status);
+  const text = await res.text();
+  try { return JSON.parse(text); } catch(e) { return text; }
+}
+
+async function findFile(name) {
+  if (driveFileIds[name]) return driveFileIds[name];
+  const q = encodeURIComponent(`name='${name}' and '${DRIVE_FOLDER_ID}' in parents and trashed=false`);
+  const list = await driveReq('GET', `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime)`);
+  if (list.files && list.files.length > 0) {
+    driveFileIds[name] = list.files[0].id;
+    return list.files[0].id;
+  }
+  return null;
+}
+
+async function createFile(name, mimeType) {
+  const meta = { name, parents: [DRIVE_FOLDER_ID], mimeType };
+  const created = await driveReq('POST', 'https://www.googleapis.com/drive/v3/files', JSON.stringify(meta), 'application/json');
+  driveFileIds[name] = created.id;
+  return created.id;
+}
+
+async function readFile(name) {
+  const fileId = await findFile(name);
+  if (!fileId) return null;
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers: { 'Authorization': 'Bearer ' + driveAccessToken }
+  });
+  if (!res.ok) return null;
+  return await res.text();
+}
+
+async function writeFile(name, content, mimeType) {
+  if (!driveAccessToken) return;
+  try {
+    let fileId = await findFile(name);
+    if (!fileId) fileId = await createFile(name, mimeType || 'application/octet-stream');
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + driveAccessToken, 'Content-Type': mimeType || 'text/plain' },
+      body: content
+    });
+  } catch(e) { console.error('Drive write error:', e); }
+}
+
+// ---- ON DRIVE CONNECTED ----
+async function onDriveConnected() {
+  // Load overrides
+  await loadOverridesFromDrive();
+  // Load phonebook
+  await loadPhonebookFromDrive();
+  // Check if chat data exists in Drive
+  await checkExistingData();
+}
+
+async function checkExistingData() {
+  try {
+    const meta = await readFile('panther-meta.json');
+    if (!meta) {
+      // No data yet — show normal upload screen
+      showUploadReady();
+      return;
+    }
+    const info = JSON.parse(meta);
+    // Show smart upload screen
+    showSmartUpload(info.lastDate, info.messageCount);
+  } catch(e) {
+    showUploadReady();
+  }
+}
+
+function showUploadReady() {
+  const hint = document.getElementById('driveHint');
+  if (hint) hint.style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = !rawText;
+}
+
+function showSmartUpload(lastDate, count) {
+  const box = document.getElementById('driveDataBox');
+  if (!box) return;
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div style="background:rgba(39,174,96,0.1);border:1.5px solid rgba(39,174,96,0.3);border-radius:12px;padding:16px;margin-bottom:16px;text-align:right;">
+      <div style="font-size:14px;font-weight:700;color:#27ae60;margin-bottom:6px;">📦 קיים מאגר ב-Drive</div>
+      <div style="font-size:13px;color:var(--text-mid);">עד תאריך: <strong>${lastDate}</strong> · ${count} הודעות</div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button onclick="loadFromDrive()" style="flex:1;padding:10px;background:#27ae60;color:white;border:none;border-radius:8px;font-family:'Rubik',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">▶ פתח מאגר קיים</button>
+        <button onclick="document.getElementById('fileInput').click()" style="flex:1;padding:10px;background:var(--orange);color:white;border:none;border-radius:8px;font-family:'Rubik',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">⬆ העלה קובץ חדש</button>
+      </div>
+    </div>`;
+}
+
+async function loadFromDrive() {
+  const chatText = await readFile('panther-chat.txt');
+  if (!chatText) { alert('לא נמצא קובץ צ׳אט ב-Drive'); return; }
+  rawText = chatText;
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
+  document.getElementById('analyzeBtn').click();
+}
+
+// ---- SAVE CHAT TO DRIVE ----
+async function saveChatToDrive(text) {
+  if (!driveAccessToken) return;
+  await writeFile('panther-chat.txt', text, 'text/plain');
+  // Save meta
+  const lines = text.split('\n');
+  const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})/;
+  let lastDate = '';
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = msgRe.exec(lines[i]);
+    if (m) { lastDate = m[1]; break; }
+  }
+  const meta = { lastDate, messageCount: lines.length, savedAt: new Date().toISOString() };
+  await writeFile('panther-meta.json', JSON.stringify(meta), 'application/json');
+}
+
+// ---- OVERRIDES ----
+async function loadOverridesFromDrive() {
+  try {
+    const data = await readFile('panther-overrides.json');
+    if (!data) return;
+    const obj = JSON.parse(data);
+    if (obj.assignments) manualAssignments = { ...obj.assignments, ...manualAssignments };
+    if (obj.statuses) manualStatuses = { ...obj.statuses, ...manualStatuses };
+    if (obj.notes) manualNotes = { ...obj.notes, ...manualNotes };
+    saveAll();
+  } catch(e) { console.error('Overrides load error:', e); }
+}
+
+async function saveOverridesToDrive() {
+  if (!driveAccessToken) return;
+  const obj = { assignments: manualAssignments, statuses: manualStatuses, notes: manualNotes, savedAt: new Date().toISOString() };
+  await writeFile('panther-overrides.json', JSON.stringify(obj), 'application/json');
+}
+
+// ---- PHONEBOOK ----
+async function loadPhonebookFromDrive() {
+  try {
+    const data = await readFile('panther-phonebook.json');
+    if (!data) return;
+    const saved = JSON.parse(data);
+    // Merge — Drive phonebook enriches local, never overwrites
+    phonebook = { ...saved };
+    // Add Drive names to volDatabase
+    Object.values(phonebook).forEach(name => { if (name && name.length > 1) volDatabase.add(name); });
+    renderVolDb();
+  } catch(e) { console.error('Phonebook load error:', e); }
+}
+
+async function savePhonebookToDrive() {
+  if (!driveAccessToken) return;
+  // Merge volDatabase into phonebook
+  volDatabase.forEach(name => { if (!phonebook[name]) phonebook[name] = name; });
+  await writeFile('panther-phonebook.json', JSON.stringify(phonebook, null, 2), 'application/json');
+}
+
+// ---- AUTO-SAVE OVERRIDES (called after every manual change) ----
+function saveAll() {
+  saveAll();
+  saveOverridesToDrive();
+}
+
+// ---- CSV EXPORT ----
+function exportCSV() {
+  if (!parsedData || !parsedData.calls || parsedData.calls.length === 0) {
+    alert('אין נתונים לייצוא — נתח קובץ תחילה');
+    return;
+  }
+  const statusHe = { sab: 'סאב', open: 'לא שוייך לכונן', cancelled: 'בוטל', transferred: 'הועבר למחוזי' };
+  const headers = ['מספר', 'תאריך', 'יום', 'שעה', 'מרחב', 'מיקום', 'רכב', 'כונן', 'סטטוס', 'הערה'];
+  const rows = parsedData.calls.map((c, i) => [
+    i + 1, c.date, c.dayName, c.time, c.region, c.location, c.vehicle,
+    c.handlerClean || '', statusHe[c.status] || c.status, c.closingNote || ''
+  ]);
+  const csvContent = '\uFEFF' + [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const s = document.getElementById('weekStart').value;
+  const e = document.getElementById('weekEnd').value;
+  const fileName = `panther-${s||'all'}-to-${e||'all'}.csv`;
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = fileName; a.click();
+  URL.revokeObjectURL(url);
+  if (driveAccessToken) writeFile(fileName, csvContent, 'text/csv');
+}
+
+// ---- PHONEBOOK EXPORT ----
+function exportPhonebook() {
+  const rows = [...volDatabase].sort().map((name, i) => [i+1, name]);
+  const csvContent = '\uFEFF' + [['מספר', 'שם כונן'], ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'panther-phonebook.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---- INIT ----
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    initDrive();
+    // Auto-connect silently (no consent prompt)
+    setTimeout(() => {
+      if (driveTokenClient) driveTokenClient.requestAccessToken({ prompt: '' });
+    }, 1000);
+  }, 1500);
+});
+
+</script>
+</body>
+</html>
