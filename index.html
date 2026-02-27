@@ -117,7 +117,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .sec-badge { font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--bg); color:var(--text-muted); }
 
 /* CALL ROWS */
-.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px 1fr auto; gap:12px; align-items:start; transition:background 0.15s, border-color 0.15s; cursor:default; }
+.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:12px; align-items:start; transition:background 0.15s, border-color 0.15s; cursor:default; }
 .call-row:last-child { border-bottom:none; }
 .call-row:hover { background:#e8f0fa; border-bottom-color:#b8cadf; }
 .call-idx { width:24px; height:24px; background:var(--bg2); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text-muted); flex-shrink:0; }
@@ -329,7 +329,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .tab-btn { padding:7px 10px; font-size:12px; flex:1; text-align:center; }
 
   /* Call rows */
-  .call-row { padding:13px 10px; gap:8px; grid-template-columns:22px 1fr 76px; }
+  .call-row { padding:13px 10px; gap:8px; grid-template-columns:22px minmax(0,1fr) 76px; }
   .call-idx { align-self:start; margin-top:2px; width:20px; height:20px; font-size:11px; }
   .call-loc { font-size:15px; white-space:normal; word-break:break-word; }
   .call-meta { font-size:13px; }
@@ -2162,7 +2162,7 @@ async function savePhonebookToDrive() {
 
 // ---- AUTO-SAVE OVERRIDES (called after every manual change) ----
 function saveAll() {
-  saveAll();
+  saveStorage();
   saveOverridesToDrive();
 }
 
