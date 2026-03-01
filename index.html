@@ -148,11 +148,11 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .btn-chat-view:hover { background:rgba(44,74,110,0.14); color:var(--blue-dark); }
 
 /* VOLUNTEERS */
-.vol-row { padding:12px 20px; display:flex; align-items:center; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
+.vol-row { padding:12px 20px; display:flex; align-items:flex-start; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
 .vol-row:last-child { border-bottom:none; }
 .vol-row:hover { background:#e8f0fa; }
-.vol-rank { width:22px; font-size:13px; font-weight:700; color:var(--text-muted); text-align:center; flex-shrink:0; }
-.vol-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; }
+.vol-rank { width:22px; font-size:13px; font-weight:700; color:var(--text-muted); text-align:center; flex-shrink:0; margin-top:2px; }
+.vol-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; margin-top:0; }
 .vol-info { flex:1; min-width:0; }
 .vol-name { font-size:15px; font-weight:600; color:var(--text); white-space:normal; overflow:visible; word-break:break-word; }
 .vol-sub { font-size:13px; color:var(--text-muted); margin-top:1px; }
@@ -541,11 +541,11 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 </div>
 
 <!-- VOL CALLS MODAL -->
-<div class="modal-overlay" id="volOverlay" onclick="closeVolModal(event)">
+<div class="modal-overlay" id="volOverlay">
   <div class="modal" style="max-width:500px;display:flex;flex-direction:column;max-height:80vh">
     <div class="modal-header">
       <div class="modal-title" id="volModalTitle">קריאות הכונן</div>
-      <button class="modal-close" onclick="closeVolModal()">✕</button>
+      <button class="modal-close" onclick="document.getElementById('volOverlay').classList.remove('open')">✕</button>
     </div>
     <div id="volModalSummary" style="padding:14px 20px;background:var(--bg);border-bottom:1.5px solid var(--divider);display:flex;gap:16px;flex-shrink:0"></div>
     <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch" id="volModalBody"></div>
@@ -1606,7 +1606,7 @@ function onAssignKey(e) {
 async function confirmAssign() {
   const typed = document.getElementById('assignInput').value.trim();
   if (typed && !pendingHandlers.includes(typed)) pendingHandlers.push(typed);
-  const combined = pendingHandlers.join(', ');
+  const combined = pendingHandlers.join(' | ');
   manualAssignments[assigningCallIndex] = combined;
   pendingHandlers.forEach(n => volDatabase.add(n));
   saveStorage(); // always save locally
