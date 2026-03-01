@@ -1398,7 +1398,6 @@ function callRowHtml(c,i) {
     ? `<div class="handler-name">
         🙋 טיפל בקריאה:
         <button class="handler-edit-btn" onclick="event.stopPropagation();openAssign(${c.index})"><strong>${c.handlerClean}</strong></button>
-        <button class="btn-add-handler" onclick="event.stopPropagation();openAssign(${c.index})" title="הוסף כונן נוסף">+ כונן</button>
         <span class="handler-edit-hint">· לחץ לשינוי</span>
       </div>`
     : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
@@ -1420,7 +1419,10 @@ function callRowHtml(c,i) {
       </div>
       ${handlerLine}
       ${cancelLine}
-      <button class="btn-chat-view" onclick="event.stopPropagation();openChatViewer(${c.index})">💬 צפה בשיחה</button>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+        <button class="btn-chat-view" onclick="event.stopPropagation();openChatViewer(${c.index})">💬 צפה בשיחה</button>
+        ${c.handlerClean ? `<button class="btn-add-handler" onclick="event.stopPropagation();openAssign(${c.index})">+ כונן</button>` : ''}
+      </div>
     </div>
     <div class="call-right">
       <div class="call-date">${c.date}</div>
@@ -1676,11 +1678,8 @@ function closeVolModal(e) {
 }
 
 function scrollToCall(idx) {
-  // Close all modals
   document.getElementById('volOverlay').classList.remove('open');
-  // Switch to dashboard tab
   switchTab('dash');
-  // Wait for DOM to settle then scroll
   setTimeout(()=>{
     const el=document.getElementById(`call-${idx}`);
     if(el){
@@ -1688,8 +1687,17 @@ function scrollToCall(idx) {
       el.style.background='rgba(232,115,42,0.18)';
       el.style.transition='background 1s';
       setTimeout(()=>{ el.style.background=''; }, 2500);
+    } else {
+      // Element not found — try triggering a render first
+      const s=document.getElementById('weekStart').value;
+      const e=document.getElementById('weekEnd').value;
+      if(s&&e) renderDashboard(s,e);
+      setTimeout(()=>{
+        const el2=document.getElementById(`call-${idx}`);
+        if(el2){ el2.scrollIntoView({behavior:'smooth',block:'center'}); el2.style.background='rgba(232,115,42,0.18)'; el2.style.transition='background 1s'; setTimeout(()=>{ el2.style.background=''; },2500); }
+      }, 400);
     }
-  }, 500);
+  }, 600);
 }
 
 function goBack() {
