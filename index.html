@@ -1601,17 +1601,24 @@ function onAssignKey(e) {
   else if(e.key==='Escape'){closeAssign();}
 }
 
-function confirmAssign() {
+async function confirmAssign() {
   const typed = document.getElementById('assignInput').value.trim();
   if (typed && !pendingHandlers.includes(typed)) pendingHandlers.push(typed);
-  // Allow empty = clear all handlers
   const combined = pendingHandlers.join(', ');
   manualAssignments[assigningCallIndex] = combined;
   pendingHandlers.forEach(n => volDatabase.add(n));
-  saveAll();
+  saveStorage(); // always save locally
   closeAssign();
   const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
   renderDashboard(s,e);
+  // Save to Drive — ensure token is fresh
+  if (!driveAccessToken && driveTokenClient) {
+    driveTokenClient.requestAccessToken({ prompt: '' });
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  if (driveAccessToken) {
+    await saveOverridesToDrive();
+  }
 }
 
 function closeAssign() {
@@ -2205,7 +2212,14 @@ async function savePhonebookToDrive() {
 // ---- AUTO-SAVE OVERRIDES (called after every manual change) ----
 function saveAll() {
   saveStorage();
-  saveOverridesToDrive();
+  // Fire-and-forget Drive save with token refresh if needed
+  (async () => {
+    if (!driveAccessToken && driveTokenClient) {
+      driveTokenClient.requestAccessToken({ prompt: '' });
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    if (driveAccessToken) await saveOverridesToDrive();
+  })();
 }
 
 // ---- CSV EXPORT ----
