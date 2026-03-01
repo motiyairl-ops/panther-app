@@ -1336,16 +1336,18 @@ function renderDashboard(s,e) {
   const vs=Object.entries(volunteers).sort((a,b)=>b[1].count-a[1].count);
   document.getElementById('volBadge').textContent=`${vs.length} כוננים`;
   // Assign medals based on count — shared medal for tied counts
-  const getMedal = (count, topCount, secondCount, thirdCount) => {
-    if (count === topCount) return '🥇';
-    if (count === secondCount) return '🥈';
-    if (count === thirdCount) return '🥉';
-    return null;
-  };
+  // Only give medals if count > 1 (avoid everyone getting gold with 1 call)
   const counts = [...new Set(vs.map(([,d])=>d.count))].sort((a,b)=>b-a);
   const [top, second, third] = counts;
+  const getMedal = (count) => {
+    if (count < 2) return null; // no medal for single call
+    if (count === top) return '🥇';
+    if (count === second) return '🥈';
+    if (count === third) return '🥉';
+    return null;
+  };
   document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
-    const medal = getMedal(data.count, top, second, third);
+    const medal = getMedal(data.count);
     const rank = medal || (i+1);
     const shortName = name.length > 22 ? name.substring(0,22)+'…' : name;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
@@ -1655,7 +1657,7 @@ function showVolCalls(name, indices) {
       : c.status==='transferred'
       ? `<span style="font-size:11px;font-weight:700;color:var(--purple);background:rgba(155,89,182,0.1);padding:2px 8px;border-radius:5px">מחוזי</span>`
       : `<span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--bg);padding:2px 8px;border-radius:5px">בוטל</span>`;
-    return `<div class="modal-call-row" onclick="scrollToCall(${indices[i]})">
+    return `<div class="modal-call-row" onclick="event.stopPropagation();scrollToCall(${indices[i]})">
       <div class="modal-num">${i+1}</div>
       <div>
         <div class="modal-loc">📍 ${c.location}</div>
