@@ -117,15 +117,15 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .sec-badge { font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; background:var(--bg); color:var(--text-muted); }
 
 /* CALL ROWS */
-.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:12px; align-items:start; transition:background 0.15s, border-color 0.15s; cursor:default; }
+.call-row { padding:15px 20px; border-bottom:1.5px solid var(--divider); display:flex; flex-direction:row; gap:10px; align-items:flex-start; transition:background 0.15s, border-color 0.15s; cursor:default; }
 .call-row:last-child { border-bottom:none; }
 .call-row:hover { background:#e8f0fa; border-bottom-color:#b8cadf; }
 .call-idx { width:24px; height:24px; background:var(--bg2); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text-muted); flex-shrink:0; }
-.call-loc { font-size:17px; font-weight:700; color:var(--text); margin-bottom:4px; word-break:break-word; overflow-wrap:anywhere; white-space:normal; min-width:0; }
+.call-loc { font-size:17px; font-weight:700; color:var(--text); margin-bottom:4px; word-break:break-word; overflow-wrap:anywhere; white-space:normal; }
 .call-meta { font-size:14px; color:var(--text-mid); display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-weight:500; }
 .call-meta .hint { font-size:12px; color:var(--text-muted); font-weight:400; opacity:0; transition:opacity 0.15s; }
 .call-row:hover .hint { opacity:1; }
-.call-right { text-align:left; flex-shrink:0; width:80px; max-width:80px; word-break:break-word; }
+.call-right { text-align:left; flex-shrink:0; width:78px; }
 .call-date { font-size:13px; color:var(--text-muted); margin-bottom:2px; font-weight:500; }
 .call-time { font-size:15px; color:var(--text-mid); margin-bottom:6px; font-weight:600; }
 .status-sab { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; background:rgba(39,174,96,0.12); color:var(--green); }
@@ -329,11 +329,11 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .tab-btn { padding:7px 10px; font-size:12px; flex:1; text-align:center; }
 
   /* Call rows */
-  .call-row { padding:13px 10px; gap:8px; grid-template-columns:22px minmax(0,1fr) 76px; }
+  .call-row { padding:13px 10px; gap:8px; }
   .call-idx { align-self:start; margin-top:2px; width:20px; height:20px; font-size:11px; }
   .call-loc { font-size:15px; white-space:normal; word-break:break-word; }
   .call-meta { font-size:13px; }
-  .call-right { min-width:0; width:76px; text-align:center; align-self:start; }
+  .call-right { width:72px; text-align:center; align-self:start; }
   .call-date { font-size:12px; }
   .call-time { font-size:13px; margin-bottom:4px; }
   .status-sab, .status-cancelled, .status-open, .status-transferred { font-size:11px; padding:3px 5px; white-space:normal; word-break:keep-all; display:block; text-align:center; line-height:1.3; }
@@ -512,26 +512,26 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 
 <!-- ASSIGN MODAL -->
 <div class="modal-overlay" id="assignOverlay" style="align-items:center;padding:12px;">
-  <div class="modal" style="max-width:560px;width:100%;max-height:92vh;display:flex;flex-direction:column;">
-    <div class="modal-header" style="padding:20px 26px;flex-shrink:0;">
-      <div class="modal-title" style="font-size:20px;">שיוך כונן לאירוע</div>
-      <button class="modal-close" onclick="closeAssign()" style="width:36px;height:36px;font-size:20px;">✕</button>
+  <div class="modal" style="max-width:600px;width:100%;max-height:95vh;display:flex;flex-direction:column;">
+    <div class="modal-header" style="padding:24px 30px;flex-shrink:0;">
+      <div class="modal-title" style="font-size:22px;">שיוך כונן לאירוע</div>
+      <button class="modal-close" onclick="closeAssign()" style="width:40px;height:40px;font-size:22px;">✕</button>
     </div>
-    <div class="modal-body" style="overflow-y:auto;padding:24px;flex:1;-webkit-overflow-scrolling:touch;">
-      <div class="modal-call-info" id="assignCallInfo" style="font-size:15px;padding:16px;margin-bottom:20px;"></div>
-      <label style="font-size:16px;font-weight:700;margin-bottom:12px;display:block;">כוננים שטיפלו בקריאה:</label>
-      <div class="handler-tags" id="handlerTags" style="min-height:50px;margin-bottom:20px;gap:10px;"></div>
+    <div class="modal-body" style="overflow-y:auto;padding:28px;flex:1;-webkit-overflow-scrolling:touch;">
+      <div class="modal-call-info" id="assignCallInfo" style="font-size:16px;padding:18px;margin-bottom:22px;"></div>
+      <label style="font-size:17px;font-weight:700;margin-bottom:14px;display:block;">כוננים שטיפלו בקריאה:</label>
+      <div class="handler-tags" id="handlerTags" style="min-height:56px;margin-bottom:22px;gap:10px;"></div>
       <div class="autocomplete-wrap" style="position:relative;">
-        <input type="text" id="assignInput" placeholder="הוסף כונן..." oninput="onAssignInput()" onkeydown="onAssignKey(event)" autocomplete="off" style="font-size:17px;padding:16px;border-radius:10px;">
+        <input type="text" id="assignInput" placeholder="הוסף כונן..." oninput="onAssignInput()" onkeydown="onAssignKey(event)" autocomplete="off" style="font-size:18px;padding:18px;border-radius:10px;">
         <div class="autocomplete-list" id="assignList" style="max-height:260px;position:absolute;top:100%;right:0;left:0;z-index:9999;"></div>
       </div>
-      <div style="height:20px;"></div>
+      <div style="height:22px;"></div>
       <div class="modal-actions" id="assignActions" style="margin-top:0;gap:12px;display:none;">
-        <button class="btn-confirm" onclick="confirmAssign()" style="font-size:17px;padding:15px;">✓ שמור שינויים</button>
-        <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:17px;padding:15px;">ביטול</button>
+        <button class="btn-confirm" onclick="confirmAssign()" style="font-size:18px;padding:17px;">✓ שמור שינויים</button>
+        <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:18px;padding:17px;">ביטול</button>
       </div>
       <div id="assignNoChanges" style="text-align:center;margin-top:4px;">
-        <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:17px;padding:15px;width:100%;">סגור</button>
+        <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:18px;padding:17px;width:100%;">סגור</button>
       </div>
     </div>
   </div>
@@ -1293,11 +1293,11 @@ function renderDashboard(s,e) {
     if (manualNotes[c.index] !== undefined) {
       c.closingNote = manualNotes[c.index];
     }
-    // Count volunteers — use | separator for multiple handlers, single name otherwise
+    // Count volunteers — split manual assignments by comma or pipe
     if (c.status === 'sab' && c.handlerClean) {
-      const names = c.handlerIsSingle 
-        ? [c.handlerClean]  // single person — never split
-        : c.handlerClean.split('|').map(n => n.trim()).filter(Boolean);
+      const names = c.handlerIsSingle && !manualAssignments[c.index]
+        ? [c.handlerClean]  // single person from parse — never split
+        : c.handlerClean.split(/[|,]/).map(n => n.trim()).filter(Boolean);
       names.forEach(name => {
         if (!volunteers[name]) volunteers[name] = {count:0, region:c.region, callIndices:[]};
         if (!volunteers[name].callIndices.includes(c.index)) {
@@ -1332,14 +1332,26 @@ function renderDashboard(s,e) {
 
   const vs=Object.entries(volunteers).sort((a,b)=>b[1].count-a[1].count);
   document.getElementById('volBadge').textContent=`${vs.length} כוננים`;
-  const medals=['🥇','🥈','🥉'];
-  document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>`
-    <div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
-      <div class="vol-rank">${medals[i]||i+1}</div>
+  // Assign medals based on count — shared medal for tied counts
+  const getMedal = (count, topCount, secondCount, thirdCount) => {
+    if (count === topCount) return '🥇';
+    if (count === secondCount) return '🥈';
+    if (count === thirdCount) return '🥉';
+    return null;
+  };
+  const counts = [...new Set(vs.map(([,d])=>d.count))].sort((a,b)=>b-a);
+  const [top, second, third] = counts;
+  document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
+    const medal = getMedal(data.count, top, second, third);
+    const rank = medal || (i+1);
+    const shortName = name.length > 22 ? name.substring(0,22)+'…' : name;
+    return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
+      <div class="vol-rank">${rank}</div>
       <div class="vol-avatar av${i%8}">${name.charAt(0)}</div>
-      <div class="vol-info"><div class="vol-name">${name}</div><div class="vol-sub">לחץ לצפייה</div></div>
+      <div class="vol-info"><div class="vol-name" title="${name}">${shortName}</div><div class="vol-sub">${data.count} קריאות · לחץ לצפייה</div></div>
       <div class="vol-count">${data.count}</div>
-    </div>`).join(''):'<div class="empty-msg">לא זוהו כוננים</div>';
+    </div>`;
+  }).join(''):'<div class="empty-msg">לא זוהו כוננים</div>';
 
   const maxT=Math.max(...Object.values(regions).map(r=>r.total),1);
   document.getElementById('regionBadge').textContent=`${Object.keys(regions).length} אזורים`;
@@ -1395,8 +1407,8 @@ function callRowHtml(c,i) {
 
   return `<div class="${rowClass}" id="call-${c.index}" ondblclick="openChatViewer(${c.index})" title="לחץ פעמיים לצפייה בשיחה">
     <div class="call-idx">${i+1}</div>
-    <div style="min-width:0;overflow:hidden;">
-      <div class="call-loc">📍 ${c.location}</div>
+    <div style="flex:1;min-width:0;overflow-wrap:anywhere;word-break:break-word;">
+      <div class="call-loc">📍 ${c.location.length > 35 ? c.location.substring(0,35)+'…' : c.location}</div>
       <div class="call-meta">
         <span>מרחב ${c.region}</span>
         ${c.vehicle?`<span>${c.vehicle}</span>`:''}
@@ -1542,7 +1554,7 @@ function openAssign(callIndex) {
 function renderHandlerTags() {
   document.getElementById('handlerTags').innerHTML = pendingHandlers.length
     ? pendingHandlers.map((name,i) =>
-        `<div class="handler-tag">🙋 ${name}<button type="button" onmousedown="event.preventDefault();event.stopPropagation();removeHandlerTag(${i})" ontouchend="event.preventDefault();removeHandlerTag(${i})">×</button></div>`
+        `<div class="handler-tag">🙋 ${name} <button type="button" onclick="removeHandlerTag(${i});return false;">×</button></div>`
       ).join('')
     : '<span style="font-size:13px;color:var(--text-muted)">אין כוננים משויכים</span>';
 }
@@ -1652,17 +1664,20 @@ function closeVolModal(e) {
 }
 
 function scrollToCall(idx) {
+  // Close all modals
   document.getElementById('volOverlay').classList.remove('open');
+  // Switch to dashboard tab
   switchTab('dash');
+  // Wait for DOM to settle then scroll
   setTimeout(()=>{
     const el=document.getElementById(`call-${idx}`);
     if(el){
       el.scrollIntoView({behavior:'smooth',block:'center'});
-      el.style.background='rgba(232,115,42,0.15)';
-      el.style.transition='background 0.3s';
-      setTimeout(()=>el.style.background='',2500);
+      el.style.background='rgba(232,115,42,0.18)';
+      el.style.transition='background 1s';
+      setTimeout(()=>{ el.style.background=''; }, 2500);
     }
-  }, 350);
+  }, 500);
 }
 
 function goBack() {
