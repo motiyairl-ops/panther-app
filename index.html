@@ -154,7 +154,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .vol-rank { width:22px; font-size:13px; font-weight:700; color:var(--text-muted); text-align:center; flex-shrink:0; }
 .vol-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; }
 .vol-info { flex:1; min-width:0; }
-.vol-name { font-size:15px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vol-name { font-size:15px; font-weight:600; color:var(--text); white-space:normal; overflow:visible; word-break:break-word; }
 .vol-sub { font-size:13px; color:var(--text-muted); margin-top:1px; }
 .vol-count { font-family:'Rubik',sans-serif; font-size:28px; font-weight:700; color:var(--orange); flex-shrink:0; }
 .av0{background:#e8732a} .av1{background:#27ae60} .av2{background:#1b3a5c} .av3{background:#9b59b6} .av4{background:#e02020} .av5{background:#2980b9} .av6{background:#16a085} .av7{background:#8e44ad}
@@ -1296,11 +1296,9 @@ function renderDashboard(s,e) {
     if (manualNotes[c.index] !== undefined) {
       c.closingNote = manualNotes[c.index];
     }
-    // Count volunteers — split manual assignments by comma or pipe
+    // Count volunteers — split by pipe only (comma is part of names)
     if (c.status === 'sab' && c.handlerClean) {
-      const names = c.handlerIsSingle && !manualAssignments[c.index]
-        ? [c.handlerClean]  // single person from parse — never split
-        : c.handlerClean.split(/[|,]/).map(n => n.trim()).filter(Boolean);
+      const names = c.handlerClean.split('|').map(n => n.trim()).filter(Boolean);
       names.forEach(name => {
         if (!volunteers[name]) volunteers[name] = {count:0, region:c.region, callIndices:[]};
         if (!volunteers[name].callIndices.includes(c.index)) {
@@ -1349,7 +1347,7 @@ function renderDashboard(s,e) {
   document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
     const medal = getMedal(data.count);
     const rank = medal || (i+1);
-    const shortName = name.length > 22 ? name.substring(0,22)+'…' : name;
+    const shortName = name;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
       <div class="vol-rank">${rank}</div>
       <div class="vol-avatar av${i%8}">${name.charAt(0)}</div>
@@ -1677,27 +1675,46 @@ function closeVolModal(e) {
   document.getElementById('volOverlay').classList.remove('open');
 }
 
+let pendingScrollToCall = null;
+
 function scrollToCall(idx) {
+  pendingScrollToCall = idx;
   document.getElementById('volOverlay').classList.remove('open');
-  switchTab('dash');
-  setTimeout(()=>{
-    const el=document.getElementById(`call-${idx}`);
-    if(el){
-      el.scrollIntoView({behavior:'smooth',block:'center'});
-      el.style.background='rgba(232,115,42,0.18)';
-      el.style.transition='background 1s';
-      setTimeout(()=>{ el.style.background=''; }, 2500);
-    } else {
-      // Element not found — try triggering a render first
-      const s=document.getElementById('weekStart').value;
-      const e=document.getElementById('weekEnd').value;
-      if(s&&e) renderDashboard(s,e);
-      setTimeout(()=>{
-        const el2=document.getElementById(`call-${idx}`);
-        if(el2){ el2.scrollIntoView({behavior:'smooth',block:'center'}); el2.style.background='rgba(232,115,42,0.18)'; el2.style.transition='background 1s'; setTimeout(()=>{ el2.style.background=''; },2500); }
-      }, 400);
-    }
-  }, 600);
+  // Switch to dash tab
+  document.getElementById('tabDash').style.display='block';
+  document.getElementById('tabSearch').style.display='none';
+  document.getElementById('tabVols').style.display='none';
+  document.getElementById('tab-dash').classList.add('active');
+  document.getElementById('tab-search').classList.remove('active');
+  document.getElementById('tab-vols').classList.remove('active');
+  // Try to scroll immediately (if already rendered)
+  _doScrollToCall(idx);
+}
+
+function _doScrollToCall(idx) {
+  const el = document.getElementById(`call-${idx}`);
+  if (el) {
+    pendingScrollToCall = null;
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.style.background = 'rgba(232,115,42,0.22)';
+    el.style.transition = 'background 1s';
+    setTimeout(() => { el.style.background = ''; }, 2500);
+  } else {
+    // Not rendered yet — trigger render then retry
+    const s = document.getElementById('weekStart').value;
+    const e = document.getElementById('weekEnd').value;
+    if (s && e) renderDashboard(s, e);
+    setTimeout(() => {
+      const el2 = document.getElementById(`call-${idx}`);
+      if (el2) {
+        pendingScrollToCall = null;
+        el2.scrollIntoView({behavior:'smooth', block:'center'});
+        el2.style.background = 'rgba(232,115,42,0.22)';
+        el2.style.transition = 'background 1s';
+        setTimeout(() => { el2.style.background = ''; }, 2500);
+      }
+    }, 300);
+  }
 }
 
 function goBack() {
