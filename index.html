@@ -420,7 +420,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v73</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v74</p>
     </div>
   </div>
   <div class="upload-box">
@@ -577,7 +577,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v73</div>
+        <div class="header-version">v74</div>
       </div>
     </div>
     <div class="header-row2">
@@ -1111,7 +1111,7 @@ function parseWhatsApp(text, startDate, endDate) {
 
     const callIndex = calls.length;
     const hClean = handler ? cleanName(handler) : '';
-    calls.push({ index:callIndex, date:msg.dateStr, time:msg.timeStr, region, location:location.substring(0,65), vehicle:vehicle.substring(0,30), callType:callType||'סיוע משיכה', handler, handlerClean:hClean, handlerIsSingle, status, closingNote, dayName:dayHe(msg.date), origStatus:status, origHandlerClean:hClean });
+    calls.push({ index:callIndex, date:msg.dateStr, time:msg.timeStr, region, location:location, vehicle:vehicle, callType:callType||'סיוע משיכה', handler, handlerClean:hClean, handlerIsSingle, status, closingNote, dayName:dayHe(msg.date), origStatus:status, origHandlerClean:hClean });
 
     // Add all participants to vol database — from ENTIRE file (no date filter)
     [msg, ...messages.slice(globalIdx+1, Math.min(globalIdx+30,messages.length))].forEach(m => {
@@ -1186,6 +1186,7 @@ async function analyze() {
   if (driveAccessToken) {
     saveChatToDrive(rawText);
     savePhonebookToDrive();
+    startLiveSync();
   }
 }
 
@@ -1439,7 +1440,7 @@ function callRowHtml(c,i) {
   return `<div class="${rowClass}" id="call-${c.index}" ondblclick="openChatViewer(${c.index})" title="לחץ פעמיים לצפייה בשיחה">
     <div class="call-idx">${i+1}</div>
     <div style="flex:1;min-width:0;overflow-wrap:anywhere;word-break:break-word;">
-      <div class="call-loc">📍 ${c.location.length > 35 ? c.location.substring(0,35)+'…' : c.location}</div>
+      <div class="call-loc">📍 ${c.location}</div>
       <div class="call-meta">
         <span>מרחב ${c.region}</span>
         ${c.vehicle?`<span>${c.vehicle}</span>`:''}
@@ -2214,6 +2215,7 @@ async function loadFromDrive() {
   document.getElementById('analyzeBtn').disabled = false;
   document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
   document.getElementById('analyzeBtn').click();
+  startLiveSync();
 }
 
 // ---- SAVE CHAT TO DRIVE ----
@@ -2360,6 +2362,77 @@ function showDriveConnectBanner() {
 function scrollToUpload() {
   const el = document.getElementById('dropZone');
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+// ===================== LIVE SYNC =====================
+let lastOverridesEtag = null;
+let liveSyncInterval = null;
+
+async function getFileEtag(filename) {
+  if (!driveAccessToken) return null;
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and trashed=false&fields=files(id,modifiedTime)`,
+      { headers: { Authorization: 'Bearer ' + driveAccessToken } }
+    );
+    const data = await res.json();
+    if (data.files && data.files.length > 0) return data.files[0].modifiedTime;
+    return null;
+  } catch(e) { return null; }
+}
+
+async function checkAndSyncOverrides() {
+  if (!driveAccessToken) return;
+  const etag = await getFileEtag('panther-overrides.json');
+  if (!etag) return;
+  if (lastOverridesEtag === null) { lastOverridesEtag = etag; return; }
+  if (etag === lastOverridesEtag) return;
+  // השתנה! טען מחדש
+  lastOverridesEtag = etag;
+  const data = await readFile('panther-overrides.json');
+  if (!data) return;
+  try {
+    const obj = JSON.parse(data);
+    if (obj.assignments) {
+      const normalized = {};
+      Object.entries(obj.assignments).forEach(([k, v]) => {
+        normalized[k] = (v && v.includes(',') && !v.includes('|'))
+          ? v.split(',').map(s => s.trim()).filter(Boolean).join('|')
+          : v;
+      });
+      manualAssignments = { ...normalized };
+    }
+    if (obj.statuses) manualStatuses = { ...obj.statuses };
+    if (obj.notes) manualNotes = { ...obj.notes };
+    // רענן תצוגה בשקט
+    if (parsedData) {
+      const s = document.getElementById('weekStart').value;
+      const e = document.getElementById('weekEnd').value;
+      renderDashboard(s, e);
+      showSyncNotice();
+    }
+  } catch(e) { console.error('Live sync error:', e); }
+}
+
+function showSyncNotice() {
+  let notice = document.getElementById('syncNotice');
+  if (!notice) {
+    notice = document.createElement('div');
+    notice.id = 'syncNotice';
+    notice.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(39,174,96,0.92);color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-family:Rubik,sans-serif;font-weight:600;z-index:9999;transition:opacity 0.5s;pointer-events:none;';
+    document.body.appendChild(notice);
+  }
+  notice.textContent = '🔄 עודכן מ-Drive';
+  notice.style.opacity = '1';
+  setTimeout(() => { notice.style.opacity = '0'; }, 2500);
+}
+
+function startLiveSync() {
+  if (liveSyncInterval) clearInterval(liveSyncInterval);
+  liveSyncInterval = setInterval(checkAndSyncOverrides, 30000);
+  // קבע etag ראשוני
+  getFileEtag('panther-overrides.json').then(etag => { lastOverridesEtag = etag; });
 }
 
 </script>
