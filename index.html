@@ -385,9 +385,9 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 }
 
 /* VOL LIST GRID — desktop shows 2 columns */
-.vol-list-grid { display:grid; grid-template-columns:repeat(2,1fr); }
+.vol-list-grid { display:block; }
 .vol-list-grid .vol-row { border-bottom:1.5px solid var(--divider); }
-.vol-list-grid .vol-row:nth-last-child(-n+2) { border-bottom:none; }
+.vol-list-grid .vol-row:last-child { border-bottom:none; }
 @media (max-width:640px) {
   .vol-list-grid { grid-template-columns:1fr; }
   .vol-list-grid .vol-row:last-child { border-bottom:none; }
@@ -420,7 +420,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v79</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v80</p>
     </div>
   </div>
   <div class="upload-box">
@@ -514,8 +514,8 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 </div>
 
 <!-- ASSIGN MODAL -->
-<div class="modal-overlay" id="assignOverlay" style="align-items:flex-end;padding:0;">
-  <div class="modal" style="max-width:100%;width:100%;max-height:92vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;">
+<div class="modal-overlay" id="assignOverlay" style="align-items:center;padding:12px;">
+  <div class="modal" style="max-width:560px;width:100%;max-height:88vh;display:flex;flex-direction:column;">
     <div class="modal-header" style="padding:24px 30px;flex-shrink:0;">
       <div class="modal-title" style="font-size:22px;">שיוך כונן לאירוע</div>
       <button class="modal-close" onclick="closeAssign()" style="width:40px;height:40px;font-size:22px;">✕</button>
@@ -577,9 +577,10 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v79</div>
+        <div class="header-version">v80</div>
       </div>
     </div>
+    <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.15);border-bottom:1px solid rgba(39,174,96,0.3);padding:4px 16px;text-align:center;font-size:12px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;"></div>
     <div class="header-row2">
       <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצא לאקסל / CSV</button>
       <div class="header-dates-desktop" style="display:flex;align-items:center;gap:6px;">
@@ -614,7 +615,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div class="section-card" style="margin-bottom:16px;">
         <div class="sec-header">
           <div class="sec-title">כוננים מובילים 🏆</div>
-          <div class="sec-badge" id="volBadge">—</div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--text-muted);font-weight:500;">כמות קריאות</span><div class="sec-badge" id="volBadge">—</div></div>
         </div>
         <div id="volList" class="vol-list-grid"></div>
       </div>
@@ -1383,10 +1384,10 @@ function renderDashboard(s,e) {
   };
   document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
     const medal = getMedal(data.count);
-    const rank = medal || (i+1);
+    const rankNum = i+1;
     const shortName = name;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
-      <div class="vol-rank">${rank}</div>
+      <div class="vol-rank" style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:24px;">${rankNum}${medal ? `<span style="font-size:13px;line-height:1;">${medal}</span>` : ''}</div>
       <div class="vol-avatar av${i%8}">${name.charAt(0)}</div>
       <div class="vol-info"><div class="vol-name" title="${name}">${shortName}</div><div class="vol-sub">${data.count} קריאות · לחץ לצפייה</div></div>
       <div class="vol-count">${data.count}</div>
@@ -2425,19 +2426,14 @@ async function checkAndSyncOverrides() {
 }
 
 function showSyncNotice() {
-  let notice = document.getElementById('syncNotice');
-  if (!notice) {
-    notice = document.createElement('div');
-    notice.id = 'syncNotice';
-    notice.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(39,174,96,0.92);color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-family:Rubik,sans-serif;font-weight:600;z-index:9999;transition:opacity 0.5s;pointer-events:none;';
-    document.body.appendChild(notice);
-  }
   const now = new Date();
   const hh = now.getHours().toString().padStart(2,'0');
   const mm = now.getMinutes().toString().padStart(2,'0');
-  notice.textContent = `🔄 עודכן מ-Drive · ${hh}:${mm}`;
-  notice.style.opacity = '1';
-  setTimeout(() => { notice.style.opacity = '0'; }, 2500);
+  const banner = document.getElementById('syncBanner');
+  if (banner) {
+    banner.textContent = `🔄 עודכן מ-Drive · ${hh}:${mm}`;
+    banner.style.display = 'block';
+  }
 }
 
 function startLiveSync() {
