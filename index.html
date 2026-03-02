@@ -1675,46 +1675,39 @@ function closeVolModal(e) {
   document.getElementById('volOverlay').classList.remove('open');
 }
 
-let pendingScrollToCall = null;
-
 function scrollToCall(idx) {
-  pendingScrollToCall = idx;
+  console.log("scrollToCall called with idx:", idx);
+  const call = parsedData && parsedData.calls ? parsedData.calls.find(c => c.index === idx) : null;
+  
   document.getElementById('volOverlay').classList.remove('open');
-  // Switch to dash tab
-  document.getElementById('tabDash').style.display='block';
-  document.getElementById('tabSearch').style.display='none';
-  document.getElementById('tabVols').style.display='none';
-  document.getElementById('tab-dash').classList.add('active');
-  document.getElementById('tab-search').classList.remove('active');
-  document.getElementById('tab-vols').classList.remove('active');
-  // Try to scroll immediately (if already rendered)
-  _doScrollToCall(idx);
-}
 
-function _doScrollToCall(idx) {
-  const el = document.getElementById(`call-${idx}`);
-  if (el) {
-    pendingScrollToCall = null;
-    el.scrollIntoView({behavior:'smooth', block:'center'});
-    el.style.background = 'rgba(232,115,42,0.22)';
-    el.style.transition = 'background 1s';
-    setTimeout(() => { el.style.background = ''; }, 2500);
-  } else {
-    // Not rendered yet — trigger render then retry
-    const s = document.getElementById('weekStart').value;
-    const e = document.getElementById('weekEnd').value;
-    if (s && e) renderDashboard(s, e);
-    setTimeout(() => {
-      const el2 = document.getElementById(`call-${idx}`);
-      if (el2) {
-        pendingScrollToCall = null;
-        el2.scrollIntoView({behavior:'smooth', block:'center'});
-        el2.style.background = 'rgba(232,115,42,0.22)';
-        el2.style.transition = 'background 1s';
-        setTimeout(() => { el2.style.background = ''; }, 2500);
-      }
-    }, 300);
+  // Expand date range if needed to include this call
+  if (call && call.date) {
+    const [d,m,y] = call.date.split('.');
+    const callDateStr = `${y}-${m}-${d}`;
+    const curStart = document.getElementById('weekStart').value;
+    const curEnd = document.getElementById('weekEnd').value;
+    let newStart = curStart;
+    let newEnd = curEnd;
+    if (callDateStr < curStart) newStart = callDateStr;
+    if (callDateStr > curEnd)   newEnd = callDateStr;
+    // Always re-render to make sure call-${idx} is in DOM
+    document.getElementById('weekStart').value = newStart;
+    document.getElementById('weekEnd').value = newEnd;
+    renderDashboard(newStart, newEnd);
   }
+
+  // Scroll with enough delay for render + paint
+  setTimeout(() => {
+    const el = document.getElementById(`call-${idx}`);
+    console.log("Looking for element call-"+idx+", found:", el);
+    if (el) {
+      el.scrollIntoView({behavior:'smooth', block:'center'});
+      el.style.background = 'rgba(232,115,42,0.22)';
+      el.style.transition = 'background 1.5s';
+      setTimeout(() => { el.style.background = ''; }, 2500);
+    }
+  }, 400);
 }
 
 function goBack() {
