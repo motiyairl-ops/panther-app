@@ -420,7 +420,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v67</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v69</p>
     </div>
   </div>
   <div class="upload-box">
@@ -537,6 +537,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       </div>
       <div id="assignNoChanges">
         <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:18px;padding:17px;width:100%;">סגור</button>
+        <button onclick="clearAssignOverride()" style="margin-top:8px;width:100%;padding:10px;background:none;border:1px solid #ccc;border-radius:8px;font-family:'Rubik',sans-serif;font-size:13px;color:var(--text-muted);cursor:pointer;" id="btnClearOverride">🔄 איפוס לפרסינג אוטומטי</button>
       </div>
     </div>
   </div>
@@ -576,7 +577,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v67</div>
+        <div class="header-version">v69</div>
       </div>
     </div>
     <div class="header-row2">
@@ -689,7 +690,15 @@ function loadStorage() {
     const saved = localStorage.getItem('yedidim_vols');
     if (saved) JSON.parse(saved).forEach(v => volDatabase.add(v));
     const savedAssign = localStorage.getItem('yedidim_assign');
-    if (savedAssign) manualAssignments = JSON.parse(savedAssign);
+    if (savedAssign) {
+      const raw = JSON.parse(savedAssign);
+      Object.entries(raw).forEach(([k, v]) => {
+        if (v && v.includes(',') && !v.includes('|')) {
+          raw[k] = v.split(',').map(s => s.trim()).filter(Boolean).join('|');
+        }
+      });
+      manualAssignments = raw;
+    }
     const savedStatus = localStorage.getItem('yedidim_statuses');
     if (savedStatus) manualStatuses = JSON.parse(savedStatus);
     const savedNotes = localStorage.getItem('yedidim_notes');
@@ -905,8 +914,8 @@ function parseWhatsApp(text, startDate, endDate) {
     let names = [];
     // Remove praise words
     const clean = sabText.replace(/האלוף|הצדיק|המלך|היקר|הבן שלנו|חביב/gi,'').trim();
-    // Split by common separators
-    const parts = clean.split(/\s+ו\s*@?|\s*,\s*|\s+@/);
+    // Split by @ mentions and Hebrew "ו" connector only (comma can be part of name)
+    const parts = clean.split(/\s+ו\s*@?|\s+@/);
     parts.forEach(p => {
       p = p.replace(/^@[\u200f\u200e⁨⁩~]*/,'').replace(/[\u200f\u200e⁨⁩~]/g,'').trim();
       if (p.length > 1) names.push(p);
@@ -1567,13 +1576,27 @@ function openAssign(callIndex) {
   document.getElementById('assignInput').value = '';
   acSelectedIdx = -1;
   const existing = manualAssignments[callIndex] || c.handlerClean || '';
-  pendingHandlers = existing ? existing.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  pendingHandlers = existing ? existing.split('|').map(s=>s.trim()).filter(Boolean) : [];
   originalHandlers = [...pendingHandlers];
   renderHandlerTags();
   updateAcList('');
   markDirty();
+  // הצג כפתור איפוס רק אם יש override ידני
+  const clearBtn = document.getElementById('btnClearOverride');
+  if (clearBtn) clearBtn.style.display = manualAssignments[callIndex] ? 'block' : 'none';
   document.getElementById('assignOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('assignInput').focus(), 100);
+}
+
+async function clearAssignOverride() {
+  if (!confirm('למחוק את השיוך הידני ולחזור לפרסינג האוטומטי?')) return;
+  delete manualAssignments[assigningCallIndex];
+  saveAll();
+  closeAssign();
+  const s = document.getElementById('weekStart').value;
+  const e = document.getElementById('weekEnd').value;
+  parsedData = parseWhatsApp(rawText, s ? new Date(s) : null, e ? new Date(e) : null);
+  renderDashboard(s, e);
 }
 
 function renderHandlerTags() {
@@ -2215,7 +2238,18 @@ async function loadOverridesFromDrive() {
     const data = await readFile('panther-overrides.json');
     if (!data) return;
     const obj = JSON.parse(data);
-    if (obj.assignments) manualAssignments = { ...obj.assignments, ...manualAssignments };
+    if (obj.assignments) {
+      // נרמל assignments ישנים שנשמרו עם פסיק → המר ל-|
+      const normalized = {};
+      Object.entries(obj.assignments).forEach(([k, v]) => {
+        if (v && v.includes(',') && !v.includes('|')) {
+          normalized[k] = v.split(',').map(s => s.trim()).filter(Boolean).join('|');
+        } else {
+          normalized[k] = v;
+        }
+      });
+      manualAssignments = { ...normalized, ...manualAssignments };
+    }
     if (obj.statuses) manualStatuses = { ...obj.statuses, ...manualStatuses };
     if (obj.notes) manualNotes = { ...obj.notes, ...manualNotes };
     saveAll();
