@@ -55,6 +55,7 @@ header { background:var(--blue-dark); color:white; padding:10px 20px 8px; box-sh
 .header-row2 { display:flex; align-items:center; gap:8px; justify-content:space-between; }
 .header-title { font-family:'Rubik',sans-serif; font-size:22px; font-weight:700; }
 .header-sub { font-size:11px; opacity:0.55; margin-top:2px; }
+.header-version { font-size:10px; opacity:0.35; margin-top:1px; letter-spacing:0.3px; }
 /* CUSTOM CALENDAR PICKER */
 .datepicker-wrap { position:relative; display:inline-block; }
 .datepicker-display { background:rgba(255,255,255,0.1); border:none; color:white; padding:5px 10px; border-radius:6px; font-family:'Rubik',sans-serif; font-size:12px; cursor:pointer; white-space:nowrap; }
@@ -508,7 +509,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:4px;">פותח באהבה עבור יחידת פנתר</div>
     <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:8px;">ע״י מוטי יאיר</div>
     <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.6;">הנתונים מעובדים בדפדפן שלך ונשמרים ב-Google Drive של היחידה בלבד</div>
-    <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;letter-spacing:0.5px;">גרסה v62</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;letter-spacing:0.5px;">גרסה v64</div>
   </div>
 </div>
 
@@ -575,6 +576,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
+        <div class="header-version">v64</div>
       </div>
     </div>
     <div class="header-row2">
@@ -942,7 +944,8 @@ function parseWhatsApp(text, startDate, endDate) {
         // Also add writer if "עם" (together with)
         if (sabOfMatch[1] === 'עם') creditedNames.push(cleanName(next.sender));
         status = 'sab';
-        handler = creditedNames.length > 0 ? creditedNames.join(', ') : (intentCandidate || next.sender);
+        handler = creditedNames.length > 0 ? creditedNames.join('|') : (intentCandidate || next.sender);
+        if (creditedNames.length > 1) handlerIsSingle = false;
         closingNote = nb.split('\n')[0].trim().substring(0, 60);
         break;
       }
@@ -952,7 +955,8 @@ function parseWhatsApp(text, startDate, endDate) {
         const creditedNames = extractCreditedNames(nb.replace(LATE_REPORT_RE,''), next.sender);
         if (creditedNames.length > 0) {
           status = 'sab';
-          handler = creditedNames.join(', ');
+          handler = creditedNames.join('|');
+          if (creditedNames.length > 1) handlerIsSingle = false;
           closingNote = nb.split('\n')[0].trim().substring(0, 60);
           break;
         }
