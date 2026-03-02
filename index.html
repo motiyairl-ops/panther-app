@@ -420,7 +420,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v65</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v66</p>
     </div>
   </div>
   <div class="upload-box">
@@ -576,7 +576,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v65</div>
+        <div class="header-version">v66</div>
       </div>
     </div>
     <div class="header-row2">
@@ -781,6 +781,10 @@ function processText(text, fileName, fileSize) {
     ['btnUploadEnd','btnEnd'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='📅 '+formatDisplayDate(weekEnd);});
     const ms=document.getElementById('mobileStartDate'); if(ms) ms.value=fmtDate(weekStart);
     const me=document.getElementById('mobileEndDate'); if(me) me.value=fmtDate(weekEnd);
+  }
+  // אם מחובר ל-Drive — נתח ושמור אוטומטית כדי לעדכן את כל המשתמשים
+  if (driveAccessToken) {
+    setTimeout(() => analyze(), 300);
   }
 }
 
