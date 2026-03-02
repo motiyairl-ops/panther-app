@@ -420,7 +420,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v77</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v78</p>
     </div>
   </div>
   <div class="upload-box">
@@ -577,7 +577,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v77</div>
+        <div class="header-version">v78</div>
       </div>
     </div>
     <div class="header-row2">
@@ -825,6 +825,11 @@ function extractDates(text) {
 function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 // ===================== PARSER =====================
+function localDate(str) {
+  if (!str) return null;
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
 function parseWhatsApp(text, startDate, endDate) {
   const lines = text.split('\n');
   const messages = [];
@@ -1178,7 +1183,7 @@ async function analyze() {
   }
   if(s) { calState.selectedStart=new Date(s); document.getElementById('btnStart').textContent='📅 '+formatDisplayDate(new Date(s)); }
   if(e) { calState.selectedEnd=new Date(e); document.getElementById('btnEnd').textContent='📅 '+formatDisplayDate(new Date(e)); }
-  parsedData = parseWhatsApp(rawText, s?new Date(s):null, e?new Date(e):null);
+  parsedData = parseWhatsApp(rawText, s?localDate(s):null, e?localDate(e):null);
   renderDashboard(s,e);
   document.getElementById('uploadScreen').style.display='none';
   document.getElementById('dashboard').style.display='block';
@@ -1598,7 +1603,7 @@ async function clearAssignOverride() {
   closeAssign();
   const s = document.getElementById('weekStart').value;
   const e = document.getElementById('weekEnd').value;
-  parsedData = parseWhatsApp(rawText, s ? new Date(s) : null, e ? new Date(e) : null);
+  parsedData = parseWhatsApp(rawText, s ? localDate(s) : null, e ? localDate(e) : null);
   renderDashboard(s, e);
 }
 
@@ -2043,7 +2048,7 @@ function reanalyze() {
   const s=document.getElementById('weekStart').value;
   const e=document.getElementById('weekEnd').value;
   if(!s||!e||!rawText) return;
-  parsedData = parseWhatsApp(rawText, new Date(s), new Date(e));
+  parsedData = parseWhatsApp(rawText, localDate(s), localDate(e));
   renderDashboard(s,e);
 }
 
@@ -2425,7 +2430,10 @@ function showSyncNotice() {
     notice.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(39,174,96,0.92);color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-family:Rubik,sans-serif;font-weight:600;z-index:9999;transition:opacity 0.5s;pointer-events:none;';
     document.body.appendChild(notice);
   }
-  notice.textContent = '🔄 עודכן מ-Drive';
+  const now = new Date();
+  const hh = now.getHours().toString().padStart(2,'0');
+  const mm = now.getMinutes().toString().padStart(2,'0');
+  notice.textContent = `🔄 עודכן מ-Drive · ${hh}:${mm}`;
   notice.style.opacity = '1';
   setTimeout(() => { notice.style.opacity = '0'; }, 2500);
 }
