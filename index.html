@@ -508,6 +508,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:4px;">פותח באהבה עבור יחידת פנתר</div>
     <div style="font-size:14px;color:rgba(255,255,255,0.8);font-weight:500;margin-bottom:8px;">ע״י מוטי יאיר</div>
     <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.6;">הנתונים מעובדים בדפדפן שלך ונשמרים ב-Google Drive של היחידה בלבד</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:8px;letter-spacing:0.5px;">גרסה v62</div>
   </div>
 </div>
 
@@ -1676,7 +1677,7 @@ function closeVolModal(e) {
 }
 
 function scrollToCall(idx) {
-  console.log("scrollToCall called with idx:", idx);
+  
   const call = parsedData && parsedData.calls ? parsedData.calls.find(c => c.index === idx) : null;
   
   document.getElementById('volOverlay').classList.remove('open');
@@ -1700,7 +1701,7 @@ function scrollToCall(idx) {
   // Scroll with enough delay for render + paint
   setTimeout(() => {
     const el = document.getElementById(`call-${idx}`);
-    console.log("Looking for element call-"+idx+", found:", el);
+    
     if (el) {
       el.scrollIntoView({behavior:'smooth', block:'center'});
       el.style.background = 'rgba(232,115,42,0.22)';
