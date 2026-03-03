@@ -429,7 +429,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v87</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v88</p>
     </div>
   </div>
   <div class="upload-box">
@@ -587,7 +587,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v87</div>
+        <div class="header-version">v88</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1403,10 +1403,13 @@ function renderDashboard(s,e) {
     const shortName = name;
     const medalClass = medal==='gold'?'medal-gold':medal==='silver'?'medal-silver':medal==='bronze'?'medal-bronze':'medal-plain';
     const medalEmoji = medal==='gold' ? '🥇' : medal==='silver' ? '🥈' : medal==='bronze' ? '🥉' : '';
+    const rankDisplay = medalEmoji
+      ? `<span style="font-size:26px;line-height:1;">${medalEmoji}</span>`
+      : `<div class="vol-rank">${rankNum}</div>`;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
-      <div class="vol-rank">${rankNum}</div>
+      ${rankDisplay}
       <div class="vol-info"><div class="vol-name" title="${name}">${shortName}</div><div class="vol-sub">${data.count} קריאות · לחץ לצפייה</div></div>
-      <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:24px;line-height:1;">${medalEmoji}</span><div class="vol-count">${data.count}</div></div>
+      <div class="vol-count">${data.count}</div>
     </div>`;
   }).join(''):'<div class="empty-msg">לא זוהו כוננים</div>';
 
@@ -2445,7 +2448,7 @@ function showSyncNotice() {
   const mm = now.getMinutes().toString().padStart(2,'0');
   const banner = document.getElementById('syncBanner');
   if (banner) {
-    banner.textContent = `🔄 עודכן מ-Drive · ${hh}:${mm}`;
+    banner.textContent = `🔄 עודכן ב-Drive · ${hh}:${mm}`;
     banner.style.display = 'block';
   }
 }
