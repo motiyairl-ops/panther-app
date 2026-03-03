@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v99</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v100</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v99</div>
+        <div class="header-version">v100</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1690,8 +1690,11 @@ async function confirmAssign() {
   const typed = document.getElementById('assignInput').value.trim();
   if (typed && !pendingHandlers.includes(typed)) pendingHandlers.push(typed);
   const combined = pendingHandlers.join(' | ');
-  manualAssignments[assigningCallIndex] = combined;
+  const prevAssign = manualAssignments[assigningCallIndex];
+  manualAssignments[assigningCallIndex] = combined || undefined;
   pendingHandlers.forEach(n => volDatabase.add(n));
+  if (combined && combined !== prevAssign) addChangeLog(assigningCallIndex, 'שיוך כונן: ' + pendingHandlers.join(', '));
+  else if (!combined && prevAssign) addChangeLog(assigningCallIndex, 'הוסר שיוך כונן');
   saveStorage(); // always save locally
   closeAssign();
   const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
