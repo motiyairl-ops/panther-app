@@ -420,7 +420,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v80</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v82</p>
     </div>
   </div>
   <div class="upload-box">
@@ -531,13 +531,14 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     </div>
     <!-- Buttons OUTSIDE scroll area — always visible -->
     <div style="padding:16px 28px 24px;flex-shrink:0;border-top:1px solid var(--bg2);">
-      <div class="modal-actions" id="assignActions" style="margin:0;gap:12px;display:none;">
-        <button class="btn-confirm" onclick="confirmAssign()" style="font-size:18px;padding:17px;">✓ שמור שינויים</button>
-        <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:18px;padding:17px;">ביטול</button>
+      <div class="modal-actions" id="assignActions" style="margin:0;gap:8px;display:none;flex-direction:column;">
+        <div style="display:flex;gap:12px;">
+          <button class="btn-confirm" onclick="confirmAssign()" style="font-size:18px;padding:17px;flex:1;">✓ שמור שינויים</button>
+          <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:18px;padding:17px;">ביטול</button>
+        </div>
       </div>
       <div id="assignNoChanges">
         <button class="btn-cancel-modal" onclick="closeAssign()" style="font-size:18px;padding:17px;width:100%;">סגור</button>
-        <button onclick="clearAssignOverride()" style="margin-top:8px;width:100%;padding:10px;background:none;border:1px solid #ccc;border-radius:8px;font-family:'Rubik',sans-serif;font-size:13px;color:var(--text-muted);cursor:pointer;" id="btnClearOverride">🔄 איפוס לפרסינג אוטומטי</button>
       </div>
     </div>
   </div>
@@ -577,10 +578,10 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v80</div>
+        <div class="header-version">v82</div>
       </div>
     </div>
-    <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.15);border-bottom:1px solid rgba(39,174,96,0.3);padding:4px 16px;text-align:center;font-size:12px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;"></div>
+    <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
     <div class="header-row2">
       <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצא לאקסל / CSV</button>
       <div class="header-dates-desktop" style="display:flex;align-items:center;gap:6px;">
@@ -1387,7 +1388,7 @@ function renderDashboard(s,e) {
     const rankNum = i+1;
     const shortName = name;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
-      <div class="vol-rank" style="display:flex;flex-direction:column;align-items:center;gap:1px;min-width:24px;">${rankNum}${medal ? `<span style="font-size:13px;line-height:1;">${medal}</span>` : ''}</div>
+      <div class="vol-rank" style="display:flex;flex-direction:row;align-items:center;gap:3px;min-width:40px;"><span style="font-size:13px;font-weight:700;">${rankNum}</span>${medal ? `<span style="font-size:20px;line-height:1;">${medal}</span>` : ''}</div>
       <div class="vol-avatar av${i%8}">${name.charAt(0)}</div>
       <div class="vol-info"><div class="vol-name" title="${name}">${shortName}</div><div class="vol-sub">${data.count} קריאות · לחץ לצפייה</div></div>
       <div class="vol-count">${data.count}</div>
@@ -1590,9 +1591,7 @@ function openAssign(callIndex) {
   renderHandlerTags();
   updateAcList('');
   markDirty();
-  // הצג כפתור איפוס רק אם יש override ידני
-  const clearBtn = document.getElementById('btnClearOverride');
-  if (clearBtn) clearBtn.style.display = manualAssignments[callIndex] ? 'block' : 'none';
+
   document.getElementById('assignOverlay').classList.add('open');
   setTimeout(()=>document.getElementById('assignInput').focus(), 100);
 }
@@ -1697,9 +1696,9 @@ function showVolCalls(name, indices) {
       <div style="font-size:24px;font-weight:700;color:var(--green)">${sabCount}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:2px">סא"ב</div>
     </div>
-    <div style="flex:2;text-align:center;background:white;border-radius:10px;padding:10px;box-shadow:var(--shadow)">
+    <div style="flex:1;text-align:center;background:white;border-radius:10px;padding:10px;box-shadow:var(--shadow)">
       <div style="font-size:13px;font-weight:600;color:var(--blue-mid);line-height:1.3">${regions||'—'}</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">אזורים</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">אזור</div>
     </div>
   `;
 
