@@ -429,7 +429,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v88</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v89</p>
     </div>
   </div>
   <div class="upload-box">
@@ -587,7 +587,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v88</div>
+        <div class="header-version">v89</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1828,8 +1828,10 @@ function toggleCal(which) {
   closeAllCals();
   if (isOpen) return;
   calState.which = which;
-  const ref = which==='start' ? calState.selectedStart : calState.selectedEnd;
-  const base = ref || new Date();
+  const ref = which==='end'
+    ? (calState.selectedEnd || calState.selectedStart || new Date())
+    : (calState.selectedStart || new Date());
+  const base = ref;
   calState.viewYear = base.getFullYear();
   calState.viewMonth = base.getMonth();
   renderCal(which, popupId, btnId);
@@ -1951,8 +1953,10 @@ function toggleCalMobile(which) {
   closeAllCals();
   if (isOpen) return;
   calState.which = 'mobile-'+which;
-  const ref = which==='start' ? calState.selectedStart : calState.selectedEnd;
-  const base = ref || new Date();
+  const ref = which==='end'
+    ? (calState.selectedEnd || calState.selectedStart || new Date())
+    : (calState.selectedStart || new Date());
+  const base = ref;
   calState.viewYear = base.getFullYear();
   calState.viewMonth = base.getMonth();
   renderCal('mobile-'+which, popupId, btnId);
@@ -2448,7 +2452,8 @@ function showSyncNotice() {
   const mm = now.getMinutes().toString().padStart(2,'0');
   const banner = document.getElementById('syncBanner');
   if (banner) {
-    banner.textContent = `🔄 עודכן ב-Drive · ${hh}:${mm}`;
+    const driveIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78" style="width:14px;height:12px;vertical-align:middle;margin-left:3px;"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.5l5.85 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>';
+    banner.innerHTML = driveIcon + ` <span>עודכן ב-${hh}:${mm}</span>`;
     banner.style.display = 'block';
   }
 }
