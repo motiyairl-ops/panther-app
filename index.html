@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v100</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v101</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v100</div>
+        <div class="header-version">v101</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1695,6 +1695,13 @@ async function confirmAssign() {
   pendingHandlers.forEach(n => volDatabase.add(n));
   if (combined && combined !== prevAssign) addChangeLog(assigningCallIndex, 'שיוך כונן: ' + pendingHandlers.join(', '));
   else if (!combined && prevAssign) addChangeLog(assigningCallIndex, 'הוסר שיוך כונן');
+  // לוגיקת סטטוס אוטומטית
+  if (combined) {
+    manualStatuses[assigningCallIndex] = 'sab';
+  } else if (prevAssign) {
+    manualStatuses[assigningCallIndex] = 'cancelled';
+    if (manualNotes[assigningCallIndex] === undefined) manualNotes[assigningCallIndex] = '';
+  }
   saveStorage(); // always save locally
   closeAssign();
   const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
@@ -2378,10 +2385,15 @@ function exportCSV() {
   }
   const statusHe = { sab: 'סאב', open: 'לא שוייך לכונן', cancelled: 'בוטל', transferred: 'הועבר למחוזי' };
   const headers = ['מספר', 'תאריך', 'יום', 'שעה', 'מרחב', 'מיקום', 'רכב', 'כונן', 'סטטוס', 'הערה'];
-  const rows = parsedData.calls.map((c, i) => [
-    i + 1, c.date, c.dayName, c.time, c.region, c.location, c.vehicle,
-    c.handlerClean || '', statusHe[c.status] || c.status, c.closingNote || ''
-  ]);
+  const rows = parsedData.calls.map((c, i) => {
+    const handler = manualAssignments[c.index]
+      ? manualAssignments[c.index].replace(/\|/g, ', ')
+      : (c.handlerClean || '');
+    const status = manualStatuses[c.index] || c.origStatus || c.status;
+    const note = manualNotes[c.index] !== undefined ? manualNotes[c.index] : (c.closingNote || '');
+    return [i + 1, c.date, c.dayName, c.time, c.region, c.location, c.vehicle,
+      handler, statusHe[status] || status, note];
+  });
   const csvContent = '\uFEFF' + [headers, ...rows]
     .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n');
