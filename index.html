@@ -429,7 +429,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v91</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v92</p>
     </div>
   </div>
   <div class="upload-box">
@@ -587,7 +587,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v91</div>
+        <div class="header-version">v92</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -2199,6 +2199,7 @@ async function onDriveConnected() {
   }
   // Load overrides
   await loadOverridesFromDrive();
+  isInitialLoad = false;
   // Load phonebook
   await loadPhonebookFromDrive();
   // Check if chat data exists in Drive
@@ -2296,8 +2297,8 @@ async function saveOverridesToDrive() {
   if (!driveAccessToken) return;
   const obj = { assignments: manualAssignments, statuses: manualStatuses, notes: manualNotes, savedAt: new Date().toISOString() };
   await writeFile('panther-overrides.json', JSON.stringify(obj), 'application/json');
-  // הצג הודעה גם למי ששמר
-  showSyncNotice();
+  // הצג הודעה רק אם זו לא טעינה ראשונית
+  if (!isInitialLoad) showSyncNotice();
   // עדכן etag כדי שהמכשיר הזה לא יזהה את עצמו כ"שינוי חדש"
   getFileEtag('panther-overrides.json').then(etag => { lastOverridesEtag = etag; });
 }
@@ -2406,6 +2407,7 @@ function scrollToUpload() {
 // ===================== LIVE SYNC =====================
 let lastOverridesEtag = null;
 let liveSyncInterval = null;
+let isInitialLoad = true;
 
 async function getFileEtag(filename) {
   if (!driveAccessToken) return null;
