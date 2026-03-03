@@ -429,7 +429,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v84</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v85</p>
     </div>
   </div>
   <div class="upload-box">
@@ -587,7 +587,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v84</div>
+        <div class="header-version">v85</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -626,7 +626,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
         <div class="sec-header" style="position:relative;">
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(232,168,0,0.6)) drop-shadow(0 0 8px rgba(255,215,0,0.4));line-height:1;">🏆</span>
+              <span style="font-size:28px;line-height:1;">🏆</span>
               <div class="sec-title" style="font-size:20px;font-weight:800;letter-spacing:-0.3px;">כוננים מובילים</div>
             </div>
             <div class="sec-badge" id="volBadge">—</div>
@@ -1392,17 +1392,16 @@ function renderDashboard(s,e) {
   const counts = [...new Set(vs.map(([,d])=>d.count))].sort((a,b)=>b-a);
   const [top, second, third] = counts;
   const getMedal = (count) => {
-    if (count < 2) return null; // no medal for single call
-    if (count === top) return '🥇';
-    if (count === second) return '🥈';
-    if (count === third) return '🥉';
+    if (count === top) return 'gold';
+    if (count === second) return 'silver';
+    if (count === third) return 'bronze';
     return null;
   };
   document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
     const medal = getMedal(data.count);
     const rankNum = i+1;
     const shortName = name;
-    const medalClass = rankNum===1?'medal-gold':rankNum===2?'medal-silver':rankNum===3?'medal-bronze':'medal-plain';
+    const medalClass = medal==='gold'?'medal-gold':medal==='silver'?'medal-silver':medal==='bronze'?'medal-bronze':'medal-plain';
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
       <div class="${medalClass}">${rankNum}</div>
       <div class="vol-info"><div class="vol-name" title="${name}">${shortName}</div><div class="vol-sub">${data.count} קריאות · לחץ לצפייה</div></div>
