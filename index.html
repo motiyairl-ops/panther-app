@@ -152,8 +152,15 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .vol-row { padding:12px 20px; display:flex; align-items:flex-start; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
 .vol-row:last-child { border-bottom:none; }
 .vol-row:hover { background:#e8f0fa; }
-.vol-rank { width:22px; font-size:13px; font-weight:700; color:var(--text-muted); text-align:center; flex-shrink:0; margin-top:2px; }
-.vol-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:white; flex-shrink:0; margin-top:0; }
+.vol-rank { display:none; }
+/* MEDALS */
+.medal-circle { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:800; color:white; flex-shrink:0; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.25); }
+.medal-gold { background:linear-gradient(135deg,#f6d365 0%,#e8a800 40%,#ffd700 60%,#c8860a 100%); box-shadow:0 2px 12px rgba(232,168,0,0.5); }
+.medal-silver { background:linear-gradient(135deg,#e0e0e0 0%,#aaa 40%,#d8d8d8 60%,#888 100%); box-shadow:0 2px 12px rgba(150,150,150,0.5); }
+.medal-bronze { background:linear-gradient(135deg,#f0a36c 0%,#cd7f32 40%,#e8924a 60%,#a0522d 100%); box-shadow:0 2px 12px rgba(180,100,40,0.4); }
+.medal-plain { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:var(--text-muted); flex-shrink:0; }
+
+.vol-avatar { display:none; }
 .vol-info { flex:1; min-width:0; }
 .vol-name { font-size:15px; font-weight:600; color:var(--text); white-space:normal; overflow:visible; word-break:break-word; }
 .vol-sub { font-size:13px; color:var(--text-muted); margin-top:1px; }
@@ -218,6 +225,8 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 
 /* ===================== MOBILE RESPONSIVE ===================== */
 @media (max-width: 640px) {
+  #assignOverlay { align-items:flex-end !important; padding:0 !important; }
+  #assignOverlay .modal { border-radius:20px 20px 0 0 !important; min-height:78vh !important; max-height:92vh !important; max-width:100% !important; width:100% !important; }
 
   /* Upload screen */
   #uploadScreen { padding:20px 12px; justify-content:flex-start; padding-top:32px; }
@@ -420,7 +429,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v82</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v84</p>
     </div>
   </div>
   <div class="upload-box">
@@ -578,7 +587,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v82</div>
+        <div class="header-version">v84</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -614,9 +623,15 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div id="tabDash">
       <div class="stats-row" id="statsRow"></div>
       <div class="section-card" style="margin-bottom:16px;">
-        <div class="sec-header">
-          <div class="sec-title">כוננים מובילים 🏆</div>
-          <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:12px;color:var(--text-muted);font-weight:500;">כמות קריאות</span><div class="sec-badge" id="volBadge">—</div></div>
+        <div class="sec-header" style="position:relative;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:26px;filter:drop-shadow(0 2px 4px rgba(232,168,0,0.6)) drop-shadow(0 0 8px rgba(255,215,0,0.4));line-height:1;">🏆</span>
+              <div class="sec-title" style="font-size:20px;font-weight:800;letter-spacing:-0.3px;">כוננים מובילים</div>
+            </div>
+            <div class="sec-badge" id="volBadge">—</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.3px;">כמות<br>קריאות</div>
         </div>
         <div id="volList" class="vol-list-grid"></div>
       </div>
@@ -1387,9 +1402,9 @@ function renderDashboard(s,e) {
     const medal = getMedal(data.count);
     const rankNum = i+1;
     const shortName = name;
+    const medalClass = rankNum===1?'medal-gold':rankNum===2?'medal-silver':rankNum===3?'medal-bronze':'medal-plain';
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
-      <div class="vol-rank" style="display:flex;flex-direction:row;align-items:center;gap:3px;min-width:40px;"><span style="font-size:13px;font-weight:700;">${rankNum}</span>${medal ? `<span style="font-size:20px;line-height:1;">${medal}</span>` : ''}</div>
-      <div class="vol-avatar av${i%8}">${name.charAt(0)}</div>
+      <div class="${medalClass}">${rankNum}</div>
       <div class="vol-info"><div class="vol-name" title="${name}">${shortName}</div><div class="vol-sub">${data.count} קריאות · לחץ לצפייה</div></div>
       <div class="vol-count">${data.count}</div>
     </div>`;
