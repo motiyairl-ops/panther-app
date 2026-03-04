@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v105</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v106</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v105</div>
+        <div class="header-version">v106</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -2507,11 +2507,14 @@ async function saveChatToDrive(text) {
   await writeFile('panther-chat.txt', text, 'text/plain');
   // Save meta
   const lines = text.split('\n');
-  const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})|^(\d{1,2}\.\d{1,2}\.\d{4}),\s*\d{1,2}:\d{2}\s*-/;
+  const msgReIOS2 = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4})/;
+  const msgReAnd2 = /^(\d{1,2})\.(\d{1,2})\.(\d{4}),\s*\d{1,2}:\d{2}\s*[-–]/;
   let lastDate = '';
   for (let i = lines.length - 1; i >= 0; i--) {
-    const m = msgRe.exec(lines[i]);
-    if (m) { lastDate = m[1]; break; }
+    let m = msgReIOS2.exec(lines[i]);
+    if (m) { lastDate = `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`; break; }
+    m = msgReAnd2.exec(lines[i]);
+    if (m) { lastDate = `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`; break; }
   }
   const meta = { lastDate, messageCount: lines.length, savedAt: new Date().toISOString() };
   await writeFile('panther-meta.json', JSON.stringify(meta), 'application/json');
