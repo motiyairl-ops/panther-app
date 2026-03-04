@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v103</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v105</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v103</div>
+        <div class="header-version">v105</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -758,7 +758,8 @@ function loadFile(file) {
       const text = e.target.result;
       // Validate it looks like a WhatsApp export (iOS or Android format)
       const looksLikeWA = /\[\d{1,2}\.\d{1,2}\.\d{4},/.test(text) || // iOS: [25.02.2026,
-                          /\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}:\d{2}/.test(text); // Android: 25/02/26, 15:30
+                          /\d{1,2}\/\d{1,2}\/\d{2,4},\s*\d{1,2}:\d{2}/.test(text) || // Android slash
+                          /\d{1,2}\.\d{1,2}\.\d{4},\s*\d{1,2}:\d{2}\s*-/.test(text); // Android dots
       if (!looksLikeWA) {
         alert('הקובץ לא נראה כמו ייצוא וואטסאפ.\nוודא שייצאת את הצ\'אט מהאפליקציה.');
         return;
@@ -819,7 +820,7 @@ function processText(text, fileName, fileSize) {
     saveChatToDrive(rawText).then(() => {
       // מצא את התאריך האחרון בקובץ ועדכן את התצוגה
       const lines = rawText.split('\n');
-      const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})/;
+      const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})|^(\d{1,2}\.\d{1,2}\.\d{4}),\s*\d{1,2}:\d{2}\s*-/;
       let lastDate = '';
       for (let i = lines.length - 1; i >= 0; i--) {
         const m = msgRe.exec(lines[i]);
@@ -2207,6 +2208,7 @@ async function mergeCallsIntoDB(newCalls, db, updateNameDict) {
 
   db.meta = db.meta || {};
   db.meta.lastMerge = new Date().toISOString();
+    db.meta.lastDate = newCalls.length > 0 ? newCalls[newCalls.length-1].date : (db.meta.lastDate || '');
   db.meta.totalCalls = existing.length;
 
   // מיין לפי תאריך
@@ -2374,14 +2376,18 @@ async function onDriveConnected() {
 
 async function checkExistingData() {
   try {
-    const meta = await readFile('panther-meta.json');
-    if (!meta) {
-      // No data yet — show normal upload screen
-      showUploadReady();
+    // נסה לטעון מ-panther-database.json קודם
+    const dbRaw = await readFile('panther-database.json');
+    if (dbRaw) {
+      pantherDB = JSON.parse(dbRaw);
+      const meta = pantherDB.meta || {};
+      showSmartUpload(meta.lastDate || '—', pantherDB.calls.length);
       return;
     }
-    const info = JSON.parse(meta);
-    // Show smart upload screen
+    // fallback ל-panther-meta.json (גרסה ישנה)
+    const metaRaw = await readFile('panther-meta.json');
+    if (!metaRaw) { showUploadReady(); return; }
+    const info = JSON.parse(metaRaw);
     showSmartUpload(info.lastDate, info.messageCount);
   } catch(e) {
     showUploadReady();
@@ -2409,7 +2415,82 @@ function showSmartUpload(lastDate, count) {
   document.getElementById('analyzeBtn').disabled = false;
 }
 
+
+function loadParsedFromDB(db) {
+  // המר DB חזרה לפורמט parsedData שרenderDashboard מצפה לו
+  const nameDict = db.nameDict || {};
+  const calls = [];
+  const volunteers = {};
+  const regions = {};
+
+  db.calls.forEach((dbCall, i) => {
+    // פתור שם כונן לפי מילון
+    const rawHandler = dbCall.rawSender || '';
+    const resolvedHandler = resolveHandler(rawHandler, nameDict);
+
+    // החל overrides
+    const assignment = manualAssignments[i];
+    const hClean = assignment
+      ? assignment.replace(/\|/g, ', ')
+      : resolvedHandler;
+
+    const origStatus = dbCall.status || 'open';
+    let status = manualStatuses[i] !== undefined ? manualStatuses[i] : origStatus;
+    const closingNote = manualNotes[i] !== undefined ? manualNotes[i] : (dbCall.closingNote || '');
+
+    const call = {
+      index: i,
+      date: dbCall.date,
+      time: dbCall.time,
+      dayName: dbCall.dayName || '',
+      region: dbCall.region,
+      location: dbCall.location,
+      vehicle: dbCall.vehicle || '',
+      callType: dbCall.callType || 'סיוע משיכה',
+      handler: hClean,
+      handlerClean: hClean,
+      handlerIsSingle: true,
+      status,
+      closingNote,
+      origStatus,
+      origHandlerClean: resolvedHandler,
+      rawContext: dbCall.rawContext || ''
+    };
+    calls.push(call);
+
+    // בנה volunteers
+    if (status === 'sab' && hClean) {
+      const names = hClean.split('|').map(n => n.trim()).filter(n => n.length >= 2);
+      names.forEach(name => {
+        if (!volunteers[name]) volunteers[name] = { count: 0, callIndices: [] };
+        volunteers[name].count++;
+        volunteers[name].callIndices.push(i);
+      });
+    }
+
+    // בנה regions
+    if (!regions[call.region]) regions[call.region] = { total: 0, sab: 0 };
+    regions[call.region].total++;
+    if (status === 'sab') regions[call.region].sab++;
+  });
+
+  parsedData = { calls, volunteers, regions };
+
+  // רענן תצוגה
+  const s = document.getElementById('weekStart').value;
+  const e = document.getElementById('weekEnd').value;
+  if (s && e) renderDashboard(s, e);
+}
+
 async function loadFromDrive() {
+  // נסה לטעון מ-DB קודם
+  if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
+    document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
+    loadParsedFromDB(pantherDB);
+    startLiveSync();
+    return;
+  }
+  // fallback — טען TXT ונתח
   const chatText = await readFile('panther-chat.txt');
   if (!chatText) { alert('לא נמצא קובץ צ׳אט ב-Drive'); return; }
   rawText = chatText;
@@ -2426,7 +2507,7 @@ async function saveChatToDrive(text) {
   await writeFile('panther-chat.txt', text, 'text/plain');
   // Save meta
   const lines = text.split('\n');
-  const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})/;
+  const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})|^(\d{1,2}\.\d{1,2}\.\d{4}),\s*\d{1,2}:\d{2}\s*-/;
   let lastDate = '';
   for (let i = lines.length - 1; i >= 0; i--) {
     const m = msgRe.exec(lines[i]);
