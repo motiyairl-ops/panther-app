@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v102</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v103</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v102</div>
+        <div class="header-version">v103</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -859,19 +859,22 @@ function parseWhatsApp(text, startDate, endDate) {
 
   // iOS format: [25.02.2026, 15:30:00] שם: הודעה
   const msgReIOS = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
-  // Android format: 25/02/2026, 15:30 - שם: הודעה
+  // Android format: 25/02/2026, 15:30 - שם: הודעה (slash)
   const msgReAndroid = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+  // Android format: 25.02.2026, 15:30 - שם: הודעה (dots - Shai's format)
+  const msgReAndroidDots = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^\u200f\u202a\u202c:][^:]*): ([\s\S]*)/;
 
   let cur = null;
   for (const line of lines) {
     let m = msgReIOS.exec(line);
     let isAndroid = false;
     if (!m) { m = msgReAndroid.exec(line); isAndroid = !!m; }
+    if (!m) { m = msgReAndroidDots.exec(line); isAndroid = !!m; }
     if (m) {
       if (cur) messages.push(cur);
       let y = parseInt(m[3]); if (isAndroid && y < 100) y += 2000;
-      const date = new Date(y, m[2]-1, m[1]);
-      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').trim(), body:m[7].trim() };
+      const date = new Date(y, parseInt(m[2])-1, parseInt(m[1]));
+      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').trim(), body:m[7].trim(), _lineIdx: lines.indexOf(line) };
     } else if (cur) cur.body += '\n' + line.trim();
   }
   if (cur) messages.push(cur);
@@ -2111,14 +2114,121 @@ function reanalyze() {
   renderDashboard(s,e);
 }
 
+
+// ===================== DATABASE (panther-database.json) =====================
+
+let pantherDB = null; // { calls: [...], nameDict: {...}, meta: {...} }
+
+function makeCallId(dateStr, timeStr, region, location) {
+  // ID גמיש: תאריך + שעה (5 דקות סובלנות) + מרחב + 15 תווים ראשונים של מיקום
+  const [h, m] = timeStr.split(':').map(Number);
+  const slot = Math.floor((h * 60 + m) / 5); // חלון 5 דקות
+  const locKey = (location || '').replace(/[^\u05d0-\u05ea]/g, '').substring(0, 12);
+  const regKey = (region || '').replace(/[*_\s]/g, '').substring(0, 6);
+  return `${dateStr}_${slot}_${regKey}_${locKey}`;
+}
+
+async function loadDatabase() {
+  if (!driveAccessToken) return null;
+  try {
+    const raw = await readFile('panther-database.json');
+    if (!raw) return { calls: [], nameDict: {}, meta: { version: 1 } };
+    return JSON.parse(raw);
+  } catch(e) {
+    console.error('loadDatabase error:', e);
+    return { calls: [], nameDict: {}, meta: { version: 1 } };
+  }
+}
+
+async function saveDatabase(db) {
+  if (!driveAccessToken) return;
+  try {
+    await writeFile('panther-database.json', JSON.stringify(db), 'application/json');
+  } catch(e) { console.error('saveDatabase error:', e); }
+}
+
+function buildNameDict(calls) {
+  // בנה מילון שמות מהקריאות: sender -> cleaned name
+  const dict = {};
+  for (const c of calls) {
+    if (!c.rawSender) continue;
+    const raw = c.rawSender;
+    // נקה תווים מיוחדים
+    const clean = raw.replace(/^~ /, '').replace(/[\u200f\u202a\u202c\u202b]/g, '').trim();
+    if (clean && clean !== raw) dict[raw] = clean;
+  }
+  return dict;
+}
+
+function resolveHandler(rawHandler, nameDict) {
+  if (!rawHandler) return '';
+  if (!nameDict) return rawHandler;
+  // נסה למצוא בדיוק
+  if (nameDict[rawHandler]) return nameDict[rawHandler];
+  // נסה חיפוש חלקי - 3 מילים ראשונות
+  const words = rawHandler.split(/\s+/).slice(0, 3).join(' ');
+  for (const [k, v] of Object.entries(nameDict)) {
+    if (k.startsWith(words) || v.startsWith(words)) return v;
+  }
+  return rawHandler;
+}
+
+async function mergeCallsIntoDB(newCalls, db, updateNameDict) {
+  const existing = db.calls;
+  const existingIds = new Set(existing.map(c => c.id));
+  let added = 0;
+
+  for (const call of newCalls) {
+    const id = makeCallId(call.date, call.time, call.region, call.location);
+    call.id = id;
+
+    // בדוק כפילות עם סובלנות זמן (±5 דקות = אותו slot)
+    if (existingIds.has(id)) continue;
+
+    // בדוק גם slots סמוכים (±1) למקרה גבולי
+    const [h, m] = call.time.split(':').map(Number);
+    const slot = Math.floor((h * 60 + m) / 5);
+    const locKey = (call.location || '').replace(/[^\u05d0-\u05ea]/g, '').substring(0, 12);
+    const regKey = (call.region || '').replace(/[*_\s]/g, '').substring(0, 6);
+    const altId1 = `${call.date}_${slot-1}_${regKey}_${locKey}`;
+    const altId2 = `${call.date}_${slot+1}_${regKey}_${locKey}`;
+    if (existingIds.has(altId1) || existingIds.has(altId2)) continue;
+
+    existing.push(call);
+    existingIds.add(id);
+    added++;
+  }
+
+  // עדכן מילון שמות רק אם מקור האמת
+  if (updateNameDict) {
+    const newDict = buildNameDict(newCalls);
+    db.nameDict = { ...db.nameDict, ...newDict };
+  }
+
+  db.meta = db.meta || {};
+  db.meta.lastMerge = new Date().toISOString();
+  db.meta.totalCalls = existing.length;
+
+  // מיין לפי תאריך
+  existing.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.time.localeCompare(b.time);
+  });
+
+  return { db, added };
+}
+
 // ===================== GOOGLE DRIVE =====================
 const DRIVE_CLIENT_ID = '616515156131-pglvg65fnlnd8d0m7coovpsoc1a40t7v.apps.googleusercontent.com';
 const DRIVE_FOLDER_ID = '1e7pp43lBczBICozmu_c2MRLAAtW1IsYZ';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+const SOURCE_OF_TRUTH_EMAIL = 'shayhalaf@gmail.com'; // שי = מקור האמת למילון שמות
 
 let driveAccessToken = null;
 let driveTokenClient = null;
 let currentUserName = localStorage.getItem('panther_username') || null;
+
+let currentUserEmail = localStorage.getItem('panther_useremail') || null;
 
 async function fetchUserName(token) {
   try {
@@ -2130,7 +2240,15 @@ async function fetchUserName(token) {
       currentUserName = data.name;
       localStorage.setItem('panther_username', data.name);
     }
+    if (data.email) {
+      currentUserEmail = data.email;
+      localStorage.setItem('panther_useremail', data.email);
+    }
   } catch(e) { console.error('Could not fetch user name:', e); }
+}
+
+function isSourceOfTruth() {
+  return currentUserEmail && currentUserEmail.toLowerCase() === SOURCE_OF_TRUTH_EMAIL.toLowerCase();
 }
 
 let driveFileIds = {}; // cache: filename -> fileId
@@ -2304,6 +2422,7 @@ async function loadFromDrive() {
 // ---- SAVE CHAT TO DRIVE ----
 async function saveChatToDrive(text) {
   if (!driveAccessToken) return;
+  // שמור טקסט גולמי לגיבוי
   await writeFile('panther-chat.txt', text, 'text/plain');
   // Save meta
   const lines = text.split('\n');
@@ -2315,6 +2434,27 @@ async function saveChatToDrive(text) {
   }
   const meta = { lastDate, messageCount: lines.length, savedAt: new Date().toISOString() };
   await writeFile('panther-meta.json', JSON.stringify(meta), 'application/json');
+
+  // מזג ל-panther-database.json
+  try {
+    const parsed = parseWhatsApp(text, null, null);
+    const newCalls = parsed.calls.map(c => ({
+      id: makeCallId(c.date, c.time, c.region, c.location),
+      date: c.date,
+      time: c.time,
+      dayName: c.dayName,
+      region: c.region,
+      location: c.location,
+      vehicle: c.vehicle,
+      callType: c.callType,
+      rawSender: c.handlerClean || '',
+      rawContext: (c.rawContext || []).slice(0, 20).join('\n')
+    }));
+    const db = await loadDatabase() || { calls: [], nameDict: {}, meta: {} };
+    const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth());
+    await saveDatabase(mergedDb);
+    console.log(`DB: נוספו ${added} קריאות חדשות, סה"כ ${mergedDb.calls.length}`);
+  } catch(e) { console.error('DB merge error:', e); }
 }
 
 // ---- OVERRIDES ----
