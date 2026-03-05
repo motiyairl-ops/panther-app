@@ -1330,7 +1330,7 @@ function renderChatFromContext(c) {
     </div>`;
   });
 
-  document.getElementById('chatMessages').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
+  document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
   setTimeout(() => {
     const el = document.querySelector('.chat-call-highlight');
