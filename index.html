@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v110</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v113</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v110</div>
+        <div class="header-version">v113</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -754,7 +754,7 @@ function loadFile(file) {
   } else {
     // Accept any text file regardless of name
     const r = new FileReader();
-    r.onload = e => {
+    r.onload = async e => {
       const text = e.target.result;
       // Validate it looks like a WhatsApp export (iOS or Android format)
       const looksLikeWA = /\[\d{1,2}\.\d{1,2}\.\d{4},/.test(text) || // iOS: [25.02.2026,
@@ -764,7 +764,7 @@ function loadFile(file) {
         alert('הקובץ לא נראה כמו ייצוא וואטסאפ.\nוודא שייצאת את הצ\'אט מהאפליקציה.');
         return;
       }
-      processText(text, file.name, file.size);
+      await processText(text, file.name, file.size);
     };
     r.readAsText(file, 'utf-8');
   }
@@ -789,7 +789,7 @@ async function loadZipFile(file) {
     txtFile = txtFile || fallback;
     if (!txtFile) { alert('לא נמצא קובץ טקסט בתוך ה-ZIP'); return; }
     const text = await txtFile.async('string');
-    processText(text, file.name, file.size);
+    await processText(text, file.name, file.size);
   } catch(err) {
     alert('שגיאה בפתיחת קובץ ZIP: ' + err.message);
   }
@@ -834,7 +834,7 @@ async function processText(text, fileName, fileSize) {
         const m = msgRe.exec(lines[i]);
         if (m) { lastDate = m[1]; break; }
       }
-      showSmartUpload(lastDate, lines.length);
+      showSmartUpload(pantherDB ? (pantherDB.meta?.lastDate || lastDate) : lastDate, pantherDB ? pantherDB.calls.length : lines.length);
       document.getElementById('dzSub').textContent = `✓ מאגר עודכן ב-Drive`;
     });
   }
