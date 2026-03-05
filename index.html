@@ -2337,7 +2337,8 @@ function resolveHandler(rawHandler, nameDict) {
 
 async function mergeCallsIntoDB(newCalls, db, updateNameDict) {
   const existing = db.calls;
-  const existingIds = new Set(existing.map(c => c.id));
+  // בנה map לפי id לחיפוש מהיר
+  const existingMap = new Map(existing.map(c => [c.id, c]));
   let added = 0;
 
   for (const call of newCalls) {
@@ -2345,32 +2346,33 @@ async function mergeCallsIntoDB(newCalls, db, updateNameDict) {
     call.id = id;
 
     // בדוק כפילות עם סובלנות זמן (±5 דקות = אותו slot)
-    if (existingIds.has(id)) continue;
-
-    // בדוק גם slots סמוכים (±1) למקרה גבולי
     const [h, m] = call.time.split(':').map(Number);
     const slot = Math.floor((h * 60 + m) / 5);
     const locKey = (call.location || '').replace(/[^\u05d0-\u05ea]/g, '').substring(0, 12);
     const regKey = (call.region || '').replace(/[*_\s]/g, '').substring(0, 6);
     const altId1 = `${call.date}_${slot-1}_${regKey}_${locKey}`;
     const altId2 = `${call.date}_${slot+1}_${regKey}_${locKey}`;
-    if (existingIds.has(altId1) || existingIds.has(altId2)) continue;
 
-    existing.push(call);
-    existingIds.add(id);
-    added++;
-  }
+    const matchId = existingMap.has(id) ? id
+                  : existingMap.has(altId1) ? altId1
+                  : existingMap.has(altId2) ? altId2
+                  : null;
 
-  // עדכן מילון שמות רק אם מקור האמת
-  if (updateNameDict) {
-    const newDict = buildNameDict(newCalls);
-    db.nameDict = { ...db.nameDict, ...newDict };
-    // עדכן handlerClean על כל הקריאות הקיימות לפי המילון החדש
-    for (const c of existing) {
-      if (c.rawSender) {
-        const resolved = resolveHandler(c.rawSender, db.nameDict);
-        if (resolved) c.handlerClean = resolved;
+    if (matchId) {
+      // קריאה קיימת — אם מקור האמת: עדכן שמות ו-rawContext
+      // אבל לעולם אל תדרוס עריכות ידניות
+      if (updateNameDict) {
+        const ex = existingMap.get(matchId);
+        ex.handlerClean = call.handlerClean;
+        ex.rawSender    = call.rawSender;
+        ex.rawContext   = call.rawContext || ex.rawContext;
+        // שמור: ex.manualAssignment, ex.manualStatus, ex.manualNote — לא נגענו בהם
       }
+    } else {
+      // קריאה חדשה — הוסף
+      existing.push(call);
+      existingMap.set(id, call);
+      added++;
     }
   }
 
