@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v108</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v109</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v108</div>
+        <div class="header-version">v109</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1271,6 +1271,52 @@ function handleCallClick(event, callIndex) {
   // Mobile uses long press via touch events
 }
 
+
+function renderChatFromContext(c) {
+  document.getElementById('chatModalTitle').textContent = `📍 ${c.location}`;
+  document.getElementById('chatModalSub').textContent = `${c.date} · ${c.time} · מרחב ${c.region}`;
+
+  const lines = (c.rawContext || '').split('\n');
+  const iosRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
+  const andRe = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+
+  const msgs = [];
+  let cur = null;
+  for (const line of lines) {
+    let m = iosRe.exec(line) || andRe.exec(line);
+    if (m) {
+      if (cur) msgs.push(cur);
+      cur = {
+        dateStr: `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`,
+        timeStr: `${m[4].padStart(2,'0')}:${m[5]}`,
+        sender: m[6].replace(/^~ /,'').trim(),
+        body: m[7].trim()
+      };
+    } else if (cur) cur.body += '\n' + line;
+  }
+  if (cur) msgs.push(cur);
+
+  let html = '';
+  msgs.forEach((msg, idx) => {
+    const isCallMsg = idx === 0;
+    const cleanBody = msg.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const bg = isCallMsg ? 'rgba(255,140,0,0.08)' : 'transparent';
+    const border = isCallMsg ? '2px solid var(--orange)' : '1px solid var(--divider)';
+    html += `<div style="padding:8px 10px;border-radius:8px;margin-bottom:6px;background:${bg};border:${border};">
+      <div style="font-size:11px;font-weight:700;color:var(--blue-dark);margin-bottom:2px;">${msg.sender}</div>
+      <div style="font-size:13px;color:var(--text);">${cleanBody}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${msg.timeStr}</div>
+    </div>`;
+  });
+
+  document.getElementById('chatMessages').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
+  document.getElementById('chatOverlay').classList.add('open');
+  setTimeout(() => {
+    const el = document.querySelector('.chat-call-highlight');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+}
+
 function openChatViewer(callIndex) {
   const c = parsedData.calls[callIndex];
   const lines = rawText.split('\n');
@@ -1293,7 +1339,15 @@ function openChatViewer(callIndex) {
 
   // Find the exact call message
   const callMsgIdx = allMsgs.findIndex(m => m.dateStr===c.date && m.timeStr===c.time);
-  if (callMsgIdx < 0) { alert('לא נמצאה ההודעה בקובץ'); return; }
+  if (callMsgIdx < 0) {
+    // נסה rawContext מה-DB
+    if (c.rawContext) {
+      renderChatFromContext(c);
+      return;
+    }
+    alert('לא נמצאה ההודעה בקובץ');
+    return;
+  }
 
   document.getElementById('chatModalTitle').textContent = `📍 ${c.location}`;
   document.getElementById('chatModalSub').textContent = `${c.date} · ${c.time} · מרחב ${c.region}`;
@@ -2555,20 +2609,39 @@ async function saveChatToDrive(text) {
   // מזג ל-panther-database.json
   try {
     const parsed = parseWhatsApp(text, null, null);
-    const newCalls = parsed.calls.map(c => ({
-      id: makeCallId(c.date, c.time, c.region, c.location),
-      date: c.date,
-      time: c.time,
-      dayName: c.dayName,
-      region: c.region,
-      location: c.location,
-      vehicle: c.vehicle,
-      callType: c.callType,
-      status: c.origStatus || c.status || 'open',
-      closingNote: c.closingNote || '',
-      rawSender: c.handlerClean || '',
-      rawContext: (c.rawContext || []).slice(0, 20).join('\n')
-    }));
+    // בנה index של שורות לכל הודעה
+    const allLines = text.split('\n');
+    const iosRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\]/;
+    const andRe = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]/;
+    const msgLineIndices = [];
+    allLines.forEach((line, i) => { if (iosRe.test(line) || andRe.test(line)) msgLineIndices.push(i); });
+
+    const newCalls = parsed.calls.map(c => {
+      // מצא את שורת הקריאה בטקסט
+      let contextLines = [];
+      const lineIdx = allLines.findIndex((line, i) => {
+        if (!iosRe.test(line) && !andRe.test(line)) return false;
+        return line.includes(c.date.replace(/^0/,'').replace(/\.0/,'.')) &&
+               line.includes(c.time.replace(/^0/,''));
+      });
+      if (lineIdx >= 0) {
+        contextLines = allLines.slice(lineIdx, lineIdx + 35);
+      }
+      return {
+        id: makeCallId(c.date, c.time, c.region, c.location),
+        date: c.date,
+        time: c.time,
+        dayName: c.dayName,
+        region: c.region,
+        location: c.location,
+        vehicle: c.vehicle,
+        callType: c.callType,
+        status: c.origStatus || c.status || 'open',
+        closingNote: c.closingNote || '',
+        rawSender: c.handlerClean || '',
+        rawContext: contextLines.join('\n')
+      };
+    });
     const db = await loadDatabase() || { calls: [], nameDict: {}, meta: {} };
     const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth());
     await saveDatabase(mergedDb);
