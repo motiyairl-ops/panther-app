@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v115</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v117</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v115</div>
+        <div class="header-version">v117</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1213,7 +1213,7 @@ async function analyze() {
     }
     if(s) { calState.selectedStart=new Date(s); document.getElementById('btnStart').textContent='📅 '+formatDisplayDate(new Date(s)); }
     if(e) { calState.selectedEnd=new Date(e); document.getElementById('btnEnd').textContent='📅 '+formatDisplayDate(new Date(e)); }
-    loadParsedFromDB(pantherDB);
+    loadParsedFromDB(pantherDB, s, e);
     document.getElementById('uploadScreen').style.display='none';
     document.getElementById('dashboard').style.display='block';
     renderVolDb();
@@ -2202,9 +2202,13 @@ function onUploadDateChange() {
 function reanalyze() {
   const s=document.getElementById('weekStart').value;
   const e=document.getElementById('weekEnd').value;
-  if(!s||!e||!rawText) return;
-  parsedData = parseWhatsApp(rawText, localDate(s), localDate(e));
-  renderDashboard(s,e);
+  if(!s||!e) return;
+  if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
+    loadParsedFromDB(pantherDB, s, e);
+  } else if (rawText) {
+    parsedData = parseWhatsApp(rawText, localDate(s), localDate(e));
+    renderDashboard(s,e);
+  }
 }
 
 
@@ -2509,14 +2513,26 @@ function showSmartUpload(lastDate, count) {
 }
 
 
-function loadParsedFromDB(db) {
+function loadParsedFromDB(db, startDate, endDate) {
   // המר DB חזרה לפורמט parsedData שרenderDashboard מצפה לו
   const nameDict = db.nameDict || {};
   const calls = [];
   const volunteers = {};
   const regions = {};
 
+  // סנן לפי תאריכים
+  const sDate = startDate ? localDate(startDate) : null;
+  const eDate = endDate ? (() => { const d = localDate(endDate); d.setDate(d.getDate()+1); return d; })() : null;
+
+  let callIndex = 0;
   db.calls.forEach((dbCall, i) => {
+    // סינון תאריכים
+    if (sDate || eDate) {
+      const [dd, mm, yy] = dbCall.date.split('.');
+      const callDate = new Date(yy, mm-1, dd);
+      if (sDate && callDate < sDate) { callIndex++; return; }
+      if (eDate && callDate >= eDate) { callIndex++; return; }
+    }
     // פתור שם כונן לפי מילון
     const rawHandler = dbCall.rawSender || '';
     const resolvedHandler = resolveHandler(rawHandler, nameDict);
@@ -2532,7 +2548,7 @@ function loadParsedFromDB(db) {
     const closingNote = manualNotes[i] !== undefined ? manualNotes[i] : (dbCall.closingNote || '');
 
     const call = {
-      index: i,
+      index: callIndex,
       date: dbCall.date,
       time: dbCall.time,
       dayName: dbCall.dayName || '',
@@ -2557,7 +2573,7 @@ function loadParsedFromDB(db) {
       names.forEach(name => {
         if (!volunteers[name]) volunteers[name] = { count: 0, callIndices: [] };
         volunteers[name].count++;
-        volunteers[name].callIndices.push(i);
+        volunteers[name].callIndices.push(callIndex);
       });
     }
 
@@ -2565,6 +2581,7 @@ function loadParsedFromDB(db) {
     if (!regions[call.region]) regions[call.region] = { total: 0, sab: 0 };
     regions[call.region].total++;
     if (status === 'sab') regions[call.region].sab++;
+    callIndex++;
   });
 
   parsedData = { calls, volunteers, regions };
@@ -2579,7 +2596,7 @@ async function loadFromDrive() {
   // נסה לטעון מ-DB קודם
   if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
     document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
-    loadParsedFromDB(pantherDB);
+    loadParsedFromDB(pantherDB, s, e);
     startLiveSync();
     return;
   }
