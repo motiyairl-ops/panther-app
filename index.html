@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v123</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v124</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v123</div>
+        <div class="header-version">v124</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -938,7 +938,7 @@ function parseWhatsApp(text, startDate, endDate) {
   const OTHER_HELPED_RE = /מישהו שם חילץ|מישהו עזר|חילץ אותו|חילצו אותו|מישהו פה עזר|עזרה מקומית/i;
 
   // End-of-call (cancelled/no credit)
-  const END_RE = /הסתדר לבד|הסתדרו לבד|יצא לבד|יצאו לבד|חולץ ע["״]י חבר|חולץ ע["״]י מכונא|בוטל|ביטל|סיום באפליקציה/i;
+  const END_RE = /הסתדר לבד|הסתדרו לבד|יצא לבד|יצאו לבד|חולץ ע["״]י חבר|חולץ ע["״]י מכונא|בוטל|ביטל|סיום באפליקציה|חזלש|חזרנו לשלום/i;
 
   // Intent patterns
   const INTENT_RE = /פרטים בבקשה|שלח פרטים|שלחי פרטים|^אני יכול|^אני לוקח|^אני בדרך|בדרך אליהם|^אני עולה|^אני מגיע|^שלח אני|^אני פה|^יוצא|^יוצאת/i;
@@ -968,7 +968,7 @@ function parseWhatsApp(text, startDate, endDate) {
   // "נלקח ע"י [שם]" — taken by someone, wait for SAB confirmation
   const TAKEN_BY_RE = /נלקח\s+ע["״]י\s+(.+)/i;
 
-  const DISPATCHERS = /מוקד|שי כלאף|נתי.*פנתרים|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
+  const DISPATCHERS = /מוקד|שי כלאף|נתי\b|נתי.*פנתרים|נתי.*בר|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
 
   // Helper: extract credited names from SAB_OF match
   function extractCreditedNames(sabText, writerName) {
@@ -1015,7 +1015,10 @@ function parseWhatsApp(text, startDate, endDate) {
     const globalIdx = messages.findIndex(m=>m.dateStr===msg.dateStr&&m.timeStr===msg.timeStr&&m.sender===msg.sender);
 
     let handler='', status='open', closingNote='', intentCandidate='', intentSender='', handlerIsSingle=false;
-    const lookEnd = Math.min(globalIdx+70, messages.length);
+    // חלון זמן: עד 4 שעות משעת הקריאה
+    const [callH, callM] = msg.timeStr.split(':').map(Number);
+    const callMinsTotal = callH * 60 + callM;
+    const lookEnd = messages.length;
 
     for (let j=globalIdx+1; j<lookEnd; j++) {
       const next = messages[j];
@@ -1071,6 +1074,15 @@ function parseWhatsApp(text, startDate, endDate) {
         handler = '';
         break;
       }
+
+      // עצור אם עברו 4 שעות משעת הקריאה
+      const [nextH, nextM] = next.timeStr.split(':').map(Number);
+      const nextMinsTotal = nextH * 60 + nextM;
+      const diffMins = nextMinsTotal >= callMinsTotal
+        ? nextMinsTotal - callMinsTotal
+        : (nextMinsTotal + 1440) - callMinsTotal; // חצות
+      if (next.dateStr !== msg.dateStr && diffMins > 240) break;
+      if (next.dateStr === msg.dateStr && diffMins > 240) break;
 
       // Stop if new call begins (with grace period)
       if (j > globalIdx+3 && CALL_RE.exec(nb)) break;
@@ -1556,9 +1568,10 @@ function renderDashboard(s,e) {
   const counts = [...new Set(vs.map(([,d])=>d.count))].sort((a,b)=>b-a);
   const [top, second, third] = counts;
   const getMedal = (count) => {
+    if (count < 2) return null; // תנאי סף: מדליה רק אם יותר מקריאה אחת
     if (count === top) return 'gold';
     if (count === second) return 'silver';
-    if (count === third && count > 1) return 'bronze';
+    if (count === third) return 'bronze';
     return null;
   };
   document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
