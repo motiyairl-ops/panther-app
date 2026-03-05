@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v109</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v110</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v109</div>
+        <div class="header-version">v110</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -2619,10 +2619,17 @@ async function saveChatToDrive(text) {
     const newCalls = parsed.calls.map(c => {
       // מצא את שורת הקריאה בטקסט
       let contextLines = [];
-      const lineIdx = allLines.findIndex((line, i) => {
+      // חפש את שורת הקריאה — נסה כמה וריאציות של תאריך/שעה
+      const dateVariants = [
+        c.date,                                    // 10.02.2026
+        c.date.replace(/^0/,'').replace(/\.0/,'.'), // 10.2.2026
+        c.date.replace(/\.(0)(\d)\./,'.$2.')        // 10.2.2026 via regex
+      ];
+      const timeVariants = [c.time, c.time.replace(/^0/,'')];
+      const lineIdx = allLines.findIndex((line) => {
         if (!iosRe.test(line) && !andRe.test(line)) return false;
-        return line.includes(c.date.replace(/^0/,'').replace(/\.0/,'.')) &&
-               line.includes(c.time.replace(/^0/,''));
+        return dateVariants.some(d => line.includes(d)) &&
+               timeVariants.some(t => line.includes(t));
       });
       if (lineIdx >= 0) {
         contextLines = allLines.slice(lineIdx, lineIdx + 35);
