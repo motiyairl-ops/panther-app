@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v107</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v108</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v107</div>
+        <div class="header-version">v108</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -795,10 +795,18 @@ async function loadZipFile(file) {
   }
 }
 
-function processText(text, fileName, fileSize) {
+async function processText(text, fileName, fileSize) {
   rawText = text;
   document.getElementById('dzSub').textContent = `✓ נטען: ${fileName} (${(fileSize/1024).toFixed(0)} KB)`;
   document.getElementById('analyzeBtn').disabled = false;
+  // בנה/עדכן DB אם מחובר ל-Drive
+  if (driveAccessToken) {
+    try {
+      document.getElementById('dzSub').textContent = `⏳ מעבד ושומר ב-Drive...`;
+      await saveChatToDrive(text);
+      document.getElementById('dzSub').textContent = `✅ ${fileName} — נשמר ב-Drive`;
+    } catch(e) { console.error('processText save error:', e); }
+  }
   const dates = extractDates(rawText).sort((a,b)=>a-b);
   if (dates.length) {
     const last = dates[dates.length-1];
@@ -1183,7 +1191,32 @@ function dayHe(d) { return ["יום א","יום ב","יום ג","יום ד","י�
 
 // ===================== ANALYZE =====================
 async function analyze() {
-  // אם אין טקסט בזיכרון אבל יש מאגר ב-Drive — טען אוטומטית
+  // אם יש DB בזיכרון — השתמש בו ישירות
+  if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
+    let s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
+    if (!s || !e) {
+      // ברירת מחדל: שבוע אחרון לפי תאריך אחרון ב-DB
+      const lastDateStr = pantherDB.meta?.lastDate;
+      if (lastDateStr) {
+        const [d,mo,y] = lastDateStr.split('.');
+        const last = new Date(y, mo-1, d);
+        s = fmtDate(getWeekStartSunday(last));
+        e = fmtDate(getWeekEndSaturday(last));
+        document.getElementById('weekStart').value = s;
+        document.getElementById('weekEnd').value = e;
+      }
+    }
+    if(s) { calState.selectedStart=new Date(s); document.getElementById('btnStart').textContent='📅 '+formatDisplayDate(new Date(s)); }
+    if(e) { calState.selectedEnd=new Date(e); document.getElementById('btnEnd').textContent='📅 '+formatDisplayDate(new Date(e)); }
+    loadParsedFromDB(pantherDB);
+    document.getElementById('uploadScreen').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    renderVolDb();
+    startLiveSync();
+    return;
+  }
+
+  // אין DB — עבוד עם TXT
   if (!rawText && driveAccessToken) {
     const chatText = await readFile('panther-chat.txt');
     if (chatText) {
@@ -1198,7 +1231,6 @@ async function analyze() {
 
   let s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
   if (!s || !e) {
-    // Use default dates from file
     const dates = extractDates(rawText).sort((a,b)=>a-b);
     if (dates.length) {
       const last = dates[dates.length-1];
