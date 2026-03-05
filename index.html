@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v122</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v123</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v122</div>
+        <div class="header-version">v123</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -821,7 +821,7 @@ async function processText(text, fileName, fileSize) {
     try {
       console.log('[processText] saving to Drive...');
       document.getElementById('dzSub').textContent = `⏳ מעבד ושומר ב-Drive...`;
-      await saveChatToDrive(text);
+      await saveChatToDrive(text, fileName);
       console.log('[processText] saved. pantherDB calls:', pantherDB?.calls?.length);
       document.getElementById('dzSub').textContent = `✅ ${fileName} — נשמר ב-Drive`;
     } catch(e) { console.error('processText save error:', e); }
@@ -1317,25 +1317,61 @@ function renderChatFromContext(c) {
   }
   if (cur) msgs.push(cur);
 
+  // מצא את הודעת הקריאה לפי שעה ±2 דקות
+  const [callH, callM] = c.time.split(':').map(Number);
+  const callMins = callH * 60 + callM;
+  const callMsgIdx = msgs.findIndex(m => {
+    if (m.dateStr !== c.date) return false;
+    const [mh, mm] = m.timeStr.split(':').map(Number);
+    return Math.abs(mh * 60 + mm - callMins) <= 2;
+  }) ?? 0;
+
   let html = '';
+  let lastDate = '';
   msgs.forEach((msg, idx) => {
-    const isCallMsg = idx === 0;
-    const cleanBody = msg.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-    const bg = isCallMsg ? 'rgba(255,140,0,0.08)' : 'transparent';
-    const border = isCallMsg ? '2px solid var(--orange)' : '1px solid var(--divider)';
-    html += `<div style="padding:8px 10px;border-radius:8px;margin-bottom:6px;background:${bg};border:${border};">
-      <div style="font-size:11px;font-weight:700;color:var(--blue-dark);margin-bottom:2px;">${msg.sender}</div>
-      <div style="font-size:13px;color:var(--text);">${cleanBody}</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${msg.timeStr}</div>
+    // הפרדת תאריך
+    if (msg.dateStr !== lastDate) {
+      lastDate = msg.dateStr;
+      html += `<div style="text-align:center;margin:10px 0;"><span style="background:rgba(0,0,0,0.12);color:#555;font-size:11px;padding:3px 10px;border-radius:10px;">${msg.dateStr}</span></div>`;
+    }
+
+    const isCallMsg = idx === callMsgIdx;
+    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
+    const senderClean = cleanName(msg.sender);
+    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
+
+    if (isSystem) {
+      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
+      return;
+    }
+
+    const bubbleStyle = isCallMsg
+      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
+      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+
+    html += `<div id="ctxmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
+      <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
+        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
+        <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
+        <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
+      </div>
     </div>`;
   });
 
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
+
+  // Scroll לקריאה עם הדגשה כתומה
   setTimeout(() => {
-    const el = document.querySelector('.chat-call-highlight');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
+    const target = document.getElementById(`ctxmsg-${callMsgIdx}`);
+    if (target) {
+      target.scrollIntoView({ block: 'center' });
+      target.style.outline = '2px solid var(--orange)';
+      target.style.borderRadius = '6px';
+      setTimeout(() => { target.style.outline = ''; }, 2500);
+    }
+  }, 80);
 }
 
 function openChatViewer(callIndex) {
@@ -1345,11 +1381,12 @@ function openChatViewer(callIndex) {
   if (!rawText && c?.rawContext) { renderChatFromContext(c); return; }
   if (!rawText) { alert('לא נמצא קובץ שיחה'); return; }
   const lines = rawText.split('\n');
-  const msgRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
+  const msgReIOS = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
+  const msgReAnd = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
   const allMsgs = [];
   let cur = null;
   for (const line of lines) {
-    const m = msgRe.exec(line);
+    const m = msgReIOS.exec(line) || msgReAnd.exec(line);
     if (m) {
       if (cur) allMsgs.push(cur);
       cur = {
@@ -1362,8 +1399,14 @@ function openChatViewer(callIndex) {
   }
   if (cur) allMsgs.push(cur);
 
-  // Find the exact call message
-  const callMsgIdx = allMsgs.findIndex(m => m.dateStr===c.date && m.timeStr===c.time);
+  // Find the call message — חיפוש גמיש: תאריך מדויק + שעה ±2 דקות
+  const [callH, callM] = c.time.split(':').map(Number);
+  const callMins = callH * 60 + callM;
+  const callMsgIdx = allMsgs.findIndex(m => {
+    if (m.dateStr !== c.date) return false;
+    const [mh, mm] = m.timeStr.split(':').map(Number);
+    return Math.abs(mh * 60 + mm - callMins) <= 2;
+  });
   if (callMsgIdx < 0) {
     // נסה rawContext מה-DB
     if (c.rawContext) {
@@ -2374,8 +2417,12 @@ async function fetchUserName(token) {
   } catch(e) { console.error('Could not fetch user name:', e); }
 }
 
-function isSourceOfTruth() {
-  return currentUserEmail && currentUserEmail.toLowerCase() === SOURCE_OF_TRUTH_EMAIL.toLowerCase();
+function isSourceOfTruth(fileName) {
+  // מקור אמת לפי מייל
+  if (currentUserEmail && currentUserEmail.toLowerCase() === SOURCE_OF_TRUTH_EMAIL.toLowerCase()) return true;
+  // מקור אמת לפי שם קובץ (לצורכי בדיקה — קובץ של שי)
+  if (fileName && fileName.includes('שי')) return true;
+  return false;
 }
 
 let driveFileIds = {}; // cache: filename -> fileId
@@ -2639,7 +2686,7 @@ async function loadFromDrive() {
 }
 
 // ---- SAVE CHAT TO DRIVE ----
-async function saveChatToDrive(text) {
+async function saveChatToDrive(text, fileName) {
   if (!driveAccessToken) return;
   // שמור טקסט גולמי לגיבוי
   await writeFile('panther-chat.txt', text, 'text/plain');
@@ -2701,9 +2748,9 @@ async function saveChatToDrive(text) {
       };
     });
     const db = await loadDatabase() || { calls: [], nameDict: {}, meta: {} };
-    console.log('[saveChatToDrive] newCalls:', newCalls.length, 'isSourceOfTruth:', isSourceOfTruth());
+    console.log('[saveChatToDrive] newCalls:', newCalls.length, 'isSourceOfTruth:', isSourceOfTruth(fileName), 'fileName:', fileName);
     console.log('[saveChatToDrive] sample rawContext:', newCalls[0]?.rawContext?.substring(0,80));
-    const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth());
+    const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth(fileName));
     await saveDatabase(mergedDb);
     pantherDB = mergedDb; // עדכן זיכרון
     console.log(`DB: נוספו ${added} קריאות חדשות, סה"כ ${mergedDb.calls.length}`);
