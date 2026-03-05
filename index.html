@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v125</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v126</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v125</div>
+        <div class="header-version">v126</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -973,17 +973,31 @@ function parseWhatsApp(text, startDate, endDate) {
   // Helper: extract credited names from SAB_OF match
   function extractCreditedNames(sabText, writerName) {
     let names = [];
-    // Remove praise words
-    const clean = sabText.replace(/האלוף|הצדיק|המלך|היקר|הבן שלנו|חביב/gi,'').trim();
-    // Split by @ mentions and Hebrew "ו" connector only (comma can be part of name)
-    const parts = clean.split(/\s+ו\s*@?|\s+@/);
-    parts.forEach(p => {
-      p = p.replace(/^@[\u200f\u200e⁨⁩~]*/,'').replace(/[\u200f\u200e⁨⁩~]/g,'').trim();
-      if (p.length > 1) names.push(p);
-    });
-    // Check for "הבן היקר/שלי" → יאיר כלאף
+
+    // עדיפות: @mentions עם תווי RTL — הכי מדויק
+    const mentionRe = /@[\u2068\u2069\u200f\u200e~\u202f]*([^\u2069\u200f\n@\u202c]{2,50})[\u2069\u200f\u202c]/g;
+    let mm;
+    while ((mm = mentionRe.exec(sabText)) !== null) {
+      let name = mm[1].replace(/[\u200f\u200e\u2068\u2069\u202c~]/g,'').replace(/^~\s*/,'').trim();
+      if (name.length > 1) names.push(name);
+    }
+
+    // אם אין @mentions — קח שורה ראשונה ונקה
+    if (names.length === 0) {
+      let first = sabText.split('\n')[0];
+      // הסר טקסט עודף אחרי השם
+      first = first.replace(/\s+(שהגיע|שבא|שיצא|בדיוק|לסייע|לעזור).*/i,'');
+      // הסר מילות שבח
+      first = first.replace(/האלוף|הצדיק|המלך|היקר|הבן שלנו|חביב|בלבד/gi,'').trim();
+      first.split(/\s+ו\s+|\s*\/\s*/).forEach(p => {
+        p = p.replace(/[\u200f\u200e\u2068\u2069\u202c~]/g,'').trim();
+        if (p.length > 1) names.push(p);
+      });
+    }
+
+    // הבן היקר/שלי → יאיר כלאף
     if (SON_RE.test(sabText)) names.push(SON_NAME);
-    // Check for "ואנוכי/ושלי/ושלנו" → add writer
+    // ואנוכי/ושלי/ושלנו → הוסף כותב
     if (AND_ME_RE.test(sabText)) names.push(cleanName(writerName));
     return names.filter(n => n.length > 1);
   }
