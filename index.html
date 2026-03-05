@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v114</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v115</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v114</div>
+        <div class="header-version">v115</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -2660,6 +2660,7 @@ async function saveChatToDrive(text) {
     console.log('[saveChatToDrive] sample rawContext:', newCalls[0]?.rawContext?.substring(0,80));
     const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth());
     await saveDatabase(mergedDb);
+    pantherDB = mergedDb; // עדכן זיכרון
     console.log(`DB: נוספו ${added} קריאות חדשות, סה"כ ${mergedDb.calls.length}`);
   } catch(e) { console.error('DB merge error:', e); }
 }
