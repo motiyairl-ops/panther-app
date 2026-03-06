@@ -378,7 +378,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .modal-overlay { padding:16px; align-items:center; }
   .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
   .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .chat-modal { height:92vh; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; }
+  .chat-modal { height:92vh; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; max-width:100% !important; }
   .chat-body { -webkit-overflow-scrolling:touch; overflow-y:scroll; flex:1; min-height:0; }
 
   /* Regions */
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v137</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v138</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,11 +593,11 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v137</div>
+        <div class="header-version">v138</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
-    <div id="dbUpdateBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a73e8,#0d47a1);color:white;text-align:center;padding:10px 16px;font-family:Rubik,sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);" onclick="reloadDB()">
+    <div id="dbUpdateBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a73e8,#0d47a1);color:white;text-align:center;padding:10px 16px;font-family:Rubik,sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);-webkit-tap-highlight-color:rgba(255,255,255,0.2);" onclick="reloadDB()" ontouchend="event.preventDefault();reloadDB()">
       🔄 <span id="dbUpdateBannerText">התקבלו נתונים חדשים למאגר</span> — לחץ כאן לטעינה מחדש
     </div>
     <div class="header-row2">
@@ -911,7 +911,8 @@ function parseWhatsApp(text, startDate, endDate) {
   // Android format: 25/02/2026, 15:30 - שם: הודעה (slash)
   const msgReAndroid = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
   // Android format: 25.02.2026, 15:30 - שם: הודעה (dots - Shai's format)
-  const msgReAndroidDots = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^\u200f\u202a\u202c:][^:]*): ([\s\S]*)/;
+  // מקבל גם sender שמתחיל בתווי RTL (כמו ‏‪+972...‬‏) — ניקוי יהיה אחרי הפרסור
+  const msgReAndroidDots = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^\u200f\u202a\u202c:‏‪‬][^:]*|[\u200f\u202a\u202c‏‪‬][^:]+): ([\s\S]*)/;
 
   let cur = null;
   for (const line of lines) {
@@ -923,7 +924,7 @@ function parseWhatsApp(text, startDate, endDate) {
       if (cur) messages.push(cur);
       let y = parseInt(m[3]); if (isAndroid && y < 100) y += 2000;
       const date = new Date(y, parseInt(m[2])-1, parseInt(m[1]));
-      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').trim(), body:m[7].trim(), _lineIdx: lines.indexOf(line) };
+      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').replace(/[\u200f\u200e\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\u206a-\u206f\uFEFF‏‪‬]/g,'').trim(), body:m[7].trim(), _lineIdx: lines.indexOf(line) };
     } else if (cur) cur.body += '\n' + line.trim();
   }
   if (cur) messages.push(cur);
@@ -1563,28 +1564,7 @@ function closeChatModal(e) {
   onModalClose();
 }
 
-// iOS Safari scroll fix — מונע גלילת הדף מאחורה כשהצ'אט פתוח
-(function() {
-  let startY = 0;
-  document.addEventListener('DOMContentLoaded', () => {
-    const chatBody = document.getElementById('chatBody');
-    if (!chatBody) return;
-    chatBody.addEventListener('touchstart', e => {
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-    chatBody.addEventListener('touchmove', e => {
-      const el = chatBody;
-      const scrollTop = el.scrollTop;
-      const scrollHeight = el.scrollHeight;
-      const clientHeight = el.clientHeight;
-      const deltaY = e.touches[0].clientY - startY;
-      // בגבול העליון — מנע גלילה למעלה (תפוס ידית הדף)
-      if (scrollTop <= 0 && deltaY > 0) { e.preventDefault(); return; }
-      // בגבול התחתון — מנע גלילה למטה
-      if (scrollTop + clientHeight >= scrollHeight && deltaY < 0) { e.preventDefault(); return; }
-    }, { passive: false });
-  });
-})();
+// iOS Safari scroll — handled via CSS (overscroll-behavior:contain + touch-action:pan-y)
 
 // ===================== RENDER DASHBOARD =====================
 function renderDashboard(s,e) {
