@@ -152,7 +152,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .btn-chat-view:hover { background:rgba(44,74,110,0.14); color:var(--blue-dark); }
 
 /* VOLUNTEERS */
-.vol-row { padding:12px 20px; display:flex; align-items:center; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
+.vol-row { padding:12px 20px; display:flex; align-items:flex-start; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
 .vol-row:last-child { border-bottom:none; }
 .vol-row:hover { background:#e8f0fa; }
 .vol-rank { width:26px; font-size:15px; font-weight:800; color:var(--text-muted); text-align:center; flex-shrink:0; }
@@ -378,8 +378,8 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .modal-overlay { padding:16px; align-items:center; }
   .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
   .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .chat-modal { max-height:92vh; border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
-  .chat-body { overflow-y:scroll; -webkit-overflow-scrolling:touch; flex:1; min-height:0; overscroll-behavior:contain; touch-action:pan-y; }
+  .chat-modal { max-height:88vh; border-radius:16px; }
+  .chat-body { -webkit-overflow-scrolling:touch; }
 
   /* Regions */
   .regions-grid { grid-template-columns:repeat(2,1fr); padding:10px; gap:8px; }
@@ -410,9 +410,9 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 }
 
 /* CHAT VIEWER MODAL */
-.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; }
+.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; }
 .chat-modal .modal-header { flex-shrink:0; }
-.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; min-height:0; overscroll-behavior:contain; touch-action:pan-y; }
+.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; }
 .chat-bubble-wrap { display:flex; margin-bottom:10px; }
 .chat-bubble { max-width:80%; padding:8px 12px; border-radius:10px; font-size:13px; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .chat-bubble.incoming { background:white; border-radius:0 10px 10px 10px; }
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v133</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v124</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,13 +593,10 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v133</div>
+        <div class="header-version">v124</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
-    <div id="dbUpdateBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a73e8,#0d47a1);color:white;text-align:center;padding:10px 16px;font-family:Rubik,sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);" onclick="reloadDB()">
-      🔄 <span id="dbUpdateBannerText">התקבלו נתונים חדשים למאגר</span> — לחץ כאן לטעינה מחדש
-    </div>
     <div class="header-row2">
       <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצא לאקסל / CSV</button>
       <div class="header-dates-desktop" style="display:flex;align-items:center;gap:6px;">
@@ -953,7 +950,7 @@ function parseWhatsApp(text, startDate, endDate) {
   const MANAGERS_RE = /נתי|שי כלאף|נתי.*פנתרים|שי.*פנתר|דודו\s*צדוק|דודו.*מוקד/i;
 
   // "סאב של [שם]" / "סאב עם [שם]" — credits named person(s)
-  const SAB_OF_RE = /ס["\u05f4]?[.״]?א["\u05f4]?[.]?ב(?:בה)?(?:\s+[^\n]{0,30}?)??\s*(של|עם)\s+([\s\S]+)/i;
+  const SAB_OF_RE = /ס["\u05f4]?א["\u05f4]?ב(?:בה)?\s+(של|עם)\s+([^\n]+)/i;
 
   // "ואנוכי" / "ושלי" / "ושלנו" — writer also gets credit
   const AND_ME_RE = /ו(אנוכי|שלי|שלנו)\b/i;
@@ -976,31 +973,17 @@ function parseWhatsApp(text, startDate, endDate) {
   // Helper: extract credited names from SAB_OF match
   function extractCreditedNames(sabText, writerName) {
     let names = [];
-
-    // עדיפות: @mentions עם תווי RTL — הכי מדויק
-    const mentionRe = /@[\u2068\u2069\u200f\u200e~\u202f]*([^\u2069\u200f\n@\u202c]{2,50})[\u2069\u200f\u202c]/g;
-    let mm;
-    while ((mm = mentionRe.exec(sabText)) !== null) {
-      let name = mm[1].replace(/[\u200f\u200e\u2068\u2069\u202c~]/g,'').replace(/^~\s*/,'').trim();
-      if (name.length > 1) names.push(name);
-    }
-
-    // אם אין @mentions — קח שורה ראשונה ונקה
-    if (names.length === 0) {
-      let first = sabText.split('\n')[0];
-      // הסר טקסט עודף אחרי השם
-      first = first.replace(/\s+(שהגיע|שבא|שיצא|בדיוק|לסייע|לעזור).*/i,'');
-      // הסר מילות שבח
-      first = first.replace(/האלוף|הצדיק|המלך|היקר|הבן שלנו|חביב|בלבד/gi,'').trim();
-      first.split(/\s+ו\s+|\s*\/\s*/).forEach(p => {
-        p = p.replace(/[\u200f\u200e\u2068\u2069\u202c~]/g,'').trim();
-        if (p.length > 1) names.push(p);
-      });
-    }
-
-    // הבן היקר/שלי → יאיר כלאף
+    // Remove praise words
+    const clean = sabText.replace(/האלוף|הצדיק|המלך|היקר|הבן שלנו|חביב/gi,'').trim();
+    // Split by @ mentions and Hebrew "ו" connector only (comma can be part of name)
+    const parts = clean.split(/\s+ו\s*@?|\s+@/);
+    parts.forEach(p => {
+      p = p.replace(/^@[\u200f\u200e⁨⁩~]*/,'').replace(/[\u200f\u200e⁨⁩~]/g,'').trim();
+      if (p.length > 1) names.push(p);
+    });
+    // Check for "הבן היקר/שלי" → יאיר כלאף
     if (SON_RE.test(sabText)) names.push(SON_NAME);
-    // ואנוכי/ושלי/ושלנו → הוסף כותב
+    // Check for "ואנוכי/ושלי/ושלנו" → add writer
     if (AND_ME_RE.test(sabText)) names.push(cleanName(writerName));
     return names.filter(n => n.length > 1);
   }
@@ -1231,8 +1214,6 @@ function cleanName(name) {
     .replace(/[-–]\s*(פנתר|ידידים|מוקד|סגן|מבצעי|יחידת|אחמ"ש|אחמש).*$/i,'')
     .replace(/\s+\d{3,}$/,'')
     .replace(/[\u200f\u200e⁨⁩]/g,'')
-    .replace(/,/g,' ')          // נרמל פסיקים → רווח
-    .replace(/\s{2,}/g,' ')    // דחוס רווחים כפולים
     .trim();
 }
 
@@ -1367,51 +1348,31 @@ function renderChatFromContext(c) {
     }
 
     const isCallMsg = idx === callMsgIdx;
+    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
+    const senderClean = cleanName(msg.sender);
+    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
 
-    // זיהוי הודעות מערכת — הסרה/הצטרפות/עזיבה
-    // הודעות מערכת בווטסאפ: sender ריק, מספר טלפון בלבד, או sender מכיל מילות מערכת
-    const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
-    const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
-    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender);
-
-    if (isSystemMsg || isPhoneOnly) {
-      const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
-      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${sysText.replace(/\*/g,'')}</span></div>`;
+    if (isSystem) {
+      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
       return;
     }
 
-    // המר *טקסט* → bold, נקה תמונות/מחיקות
-    const formatBody = (text) => text
-      .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-      .replace(/התמונה הושמטה/g,'📷')
-      .replace(/המדיה לא נכללה/g,'📷')
-      .replace(/הודעה זו נמחקה/g,'🗑️ נמחק')
-      .replace(/<ההודעה נערכה>/g,'<span style="color:#999;font-size:10px;"> ✏️</span>')
-      .trim();
-
-    const cleanBody = formatBody(msg.body);
-    const senderClean = cleanName(msg.sender);
-
-    // רק בועת קריאה — כחול. שאר — לבן
     const bubbleStyle = isCallMsg
-      ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
+      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-    const align = isCallMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
 
-    html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + align + '">'
-      + '<div style="max-width:82%;padding:8px 12px;' + bubbleStyle + 'box-shadow:0 1px 3px rgba(0,0,0,0.1);">'
-      + (isCallMsg
-          ? '<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
-          : '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">' + senderClean + '</div>')
-      + '<div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + cleanBody + '</div>'
-      + '<div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">' + msg.timeStr + '</div>'
-      + '</div></div>';
+    html += `<div id="ctxmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
+      <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
+        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
+        <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
+        <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
+      </div>
+    </div>`;
   });
 
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
-  // iOS: נעל גלילת הדף מאחורה
-  document.body.style.overflow = 'hidden';
 
   // Scroll לקריאה עם הדגשה כתומה
   setTimeout(() => {
@@ -1482,38 +1443,23 @@ function openChatViewer(callIndex) {
     }
 
     const isCallMsg = idx === callMsgIdx;
+    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
+    const senderClean = cleanName(msg.sender);
+    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
 
-    // זיהוי הודעות מערכת
-    const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
-    const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
-    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender);
-
-    if (isSystemMsg || isPhoneOnly) {
-      const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
-      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${sysText.replace(/\*/g,'')}</span></div>`;
+    if (isSystem) {
+      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
       return;
     }
 
-    const formatBody = (text) => text
-      .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-      .replace(/התמונה הושמטה/g,'📷')
-      .replace(/המדיה לא נכללה/g,'📷')
-      .replace(/הודעה זו נמחקה/g,'🗑️ נמחק')
-      .replace(/<ההודעה נערכה>/g,'<span style="color:#999;font-size:10px;"> ✏️</span>')
-      .trim();
-
-    const cleanBody = formatBody(msg.body);
-    const senderClean = cleanName(msg.sender);
     const bubbleStyle = isCallMsg
-      ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
+      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-    const align = isCallMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
-    const senderColor = isCallMsg ? '#1a73e8' : 'var(--orange)';
-    const senderPrefix = isCallMsg ? '📞 קריאה – ' : '';
 
-    html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${align}">
+    html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
       <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        <div style="font-size:11px;font-weight:700;color:${senderColor};margin-bottom:3px;">${senderPrefix}${senderClean}</div>
+        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
+        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
         <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
         <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
       </div>
@@ -1522,8 +1468,6 @@ function openChatViewer(callIndex) {
 
   document.getElementById('chatBody').innerHTML = html;
   document.getElementById('chatOverlay').classList.add('open');
-  // iOS: נעל גלילת הדף מאחורה
-  document.body.style.overflow = 'hidden';
 
   // Scroll to call message
   setTimeout(() => {
@@ -1540,35 +1484,7 @@ function openChatViewer(callIndex) {
 function closeChatModal(e) {
   if(e&&e.target!==document.getElementById('chatOverlay')) return;
   document.getElementById('chatOverlay').classList.remove('open');
-  // iOS: שחרר גלילת הדף
-  document.body.style.overflow = '';
-  document.body.style.position = '';
-  document.body.style.width = '';
-  onModalClose();
 }
-
-// iOS Safari scroll fix — מונע גלילת הדף מאחורה כשהצ'אט פתוח
-(function() {
-  let startY = 0;
-  document.addEventListener('DOMContentLoaded', () => {
-    const chatBody = document.getElementById('chatBody');
-    if (!chatBody) return;
-    chatBody.addEventListener('touchstart', e => {
-      startY = e.touches[0].clientY;
-    }, { passive: true });
-    chatBody.addEventListener('touchmove', e => {
-      const el = chatBody;
-      const scrollTop = el.scrollTop;
-      const scrollHeight = el.scrollHeight;
-      const clientHeight = el.clientHeight;
-      const deltaY = e.touches[0].clientY - startY;
-      // בגבול העליון — מנע גלילה למעלה (תפוס ידית הדף)
-      if (scrollTop <= 0 && deltaY > 0) { e.preventDefault(); return; }
-      // בגבול התחתון — מנע גלילה למטה
-      if (scrollTop + clientHeight >= scrollHeight && deltaY < 0) { e.preventDefault(); return; }
-    }, { passive: false });
-  });
-})();
 
 // ===================== RENDER DASHBOARD =====================
 function renderDashboard(s,e) {
@@ -1614,26 +1530,10 @@ function renderDashboard(s,e) {
     if (c.status === 'sab' && c.handlerClean) {
       const names = c.handlerClean.split('|').map(n => n.trim()).filter(n => n.length >= 3);
       names.forEach(name => {
-        // נרמול שמות: מצא מפתח קיים שחולק 2 מילים ראשונות זהות
-        const nameParts = name.split(/\s+/);
-        const nameKey2 = nameParts.slice(0,2).join(' '); // שם + משפחה
-        const existingKey = Object.keys(volunteers).find(k => {
-          const kParts = k.split(/\s+/);
-          return kParts.slice(0,2).join(' ') === nameKey2;
-        });
-        const key = existingKey || name;
-        // אם השם החדש ארוך יותר — הוא המועמד הטוב יותר; השתמש בארוך יותר כמפתח
-        // (שי כמקור אמת — השם המעודכן ביותר יהיה הארוך/המדויק ביותר)
-        const canonicalKey = existingKey && existingKey.length >= name.length ? existingKey : name;
-        if (existingKey && existingKey !== canonicalKey) {
-          // שנה מפתח לשם הקנוני (ארוך יותר)
-          volunteers[canonicalKey] = volunteers[existingKey];
-          delete volunteers[existingKey];
-        }
-        if (!volunteers[canonicalKey]) volunteers[canonicalKey] = {count:0, region:c.region, callIndices:[]};
-        if (!volunteers[canonicalKey].callIndices.includes(c.index)) {
-          volunteers[canonicalKey].count++;
-          volunteers[canonicalKey].callIndices.push(c.index);
+        if (!volunteers[name]) volunteers[name] = {count:0, region:c.region, callIndices:[]};
+        if (!volunteers[name].callIndices.includes(c.index)) {
+          volunteers[name].count++;
+          volunteers[name].callIndices.push(c.index);
         }
       });
     }
@@ -1681,7 +1581,7 @@ function renderDashboard(s,e) {
     const medalClass = medal==='gold'?'medal-gold':medal==='silver'?'medal-silver':medal==='bronze'?'medal-bronze':'medal-plain';
     const medalEmoji = medal==='gold' ? '🥇' : medal==='silver' ? '🥈' : medal==='bronze' ? '🥉' : '';
     const rankDisplay = medalEmoji
-      ? `<span style="font-size:34px;line-height:1;flex-shrink:0;display:flex;align-items:center;">${medalEmoji}</span>`
+      ? `<span style="font-size:26px;line-height:1;">${medalEmoji}</span>`
       : `<div class="vol-rank">${rankNum}</div>`;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
       ${rankDisplay}
@@ -1735,7 +1635,7 @@ function callRowHtml(c,i) {
     : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <button class="btn-assign" onclick="event.stopPropagation();openAssign(${c.index})">+ שייך כונן</button>
         ${c.status==='open' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualCancel(${c.index})">✕ סמן כבוטל</button>` : ''}
-        ${c.status==='cancelled' && manualStatuses[c.index]==='cancelled' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualUncancel(${c.index})" style="background:rgba(39,174,96,0.12);color:var(--green);">↩ פתח מחדש</button>` : ''}
+        ${c.status==='cancelled' && manualStatuses[c.index]==='cancelled' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualUncancel(${c.index})" style="background:rgba(39,174,96,0.12);color:var(--green);">↩ בטל ביטול</button>` : ''}
       </div>`;
 
   const isMuted = c.status==='cancelled' || c.status==='transferred';
@@ -2000,7 +1900,6 @@ async function confirmAssign() {
 
 function closeAssign() {
   document.getElementById('assignOverlay').classList.remove('open');
-  onModalClose();
   document.getElementById('assignList').style.display='none';
 }
 
@@ -2049,7 +1948,6 @@ function showVolCalls(name, indices) {
 function closeVolModal(e) {
   if(e&&e.target!==document.getElementById('volOverlay')) return;
   document.getElementById('volOverlay').classList.remove('open');
-  onModalClose();
 }
 
 function scrollToCall(idx) {
@@ -2057,7 +1955,6 @@ function scrollToCall(idx) {
   const call = parsedData && parsedData.calls ? parsedData.calls.find(c => c.index === idx) : null;
   
   document.getElementById('volOverlay').classList.remove('open');
-  onModalClose();
 
   // Expand date range if needed to include this call
   if (call && call.date) {
@@ -2422,8 +2319,6 @@ async function saveDatabase(db) {
   if (!driveAccessToken) return;
   try {
     await writeFile('panther-database.json', JSON.stringify(db), 'application/json');
-    // עדכן etag אחרי כתיבה — המכשיר שמעלה לא יקבל באנר "נתונים חדשים"
-    getFileEtag('panther-database.json').then(etag => { if (etag) lastDbEtag = etag; });
   } catch(e) { console.error('saveDatabase error:', e); }
 }
 
@@ -3018,9 +2913,7 @@ function scrollToUpload() {
 
 // ===================== LIVE SYNC =====================
 let lastOverridesEtag = null;
-let lastDbEtag = null;
 let liveSyncInterval = null;
-let dbPendingUpdate = false;
 let isInitialLoad = true;
 let manualChangelog = {}; // callIndex -> [{user, action, time}]
 
@@ -3028,22 +2921,11 @@ async function getFileEtag(filename) {
   if (!driveAccessToken) return null;
   try {
     const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and trashed=false&fields=files(id,md5Checksum,modifiedTime,lastModifyingUser)`,
+      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and trashed=false&fields=files(id,modifiedTime)`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
     );
     const data = await res.json();
-    if (data.files && data.files.length > 0) {
-      const f = data.files[0];
-      // שמור uploader לשימוש בבאנר
-      const email = f.lastModifyingUser?.emailAddress || '';
-      let uploaderName = '';
-      if (email === 'motiyair@gmail.com') uploaderName = 'מוטי';
-      else if (email === 'shayhalaf@gmail.com') uploaderName = 'שי';
-      else if (email.includes('nati') || email.includes('natabar')) uploaderName = 'נתי';
-      else if (f.lastModifyingUser?.displayName) uploaderName = f.lastModifyingUser.displayName;
-      window._lastDbUploader = uploaderName;
-      return f.md5Checksum || f.modifiedTime;
-    }
+    if (data.files && data.files.length > 0) return data.files[0].modifiedTime;
     return null;
   } catch(e) { return null; }
 }
@@ -3131,81 +3013,11 @@ function showSyncNotice() {
   }
 }
 
-// בדוק אם המאגר הראשי השתנה — אם כן, הצג התראה
-async function checkDbUpdate() {
-  if (!driveAccessToken) return;
-  const etag = await getFileEtag('panther-database.json');
-  if (!etag) return;
-  if (lastDbEtag === null) { lastDbEtag = etag; return; }
-  if (etag === lastDbEtag) return;
-  // DB השתנה!
-  lastDbEtag = etag;
-  dbPendingUpdate = true;
-  showDbUpdateBanner();
-}
-
-// האם מסך הדאשבורד הראשי פתוח (ולא מודל/עריכה)
-function isMainScreenActive() {
-  const overlays = ['assignOverlay','volOverlay','chatOverlay'];
-  for (const id of overlays) {
-    const el = document.getElementById(id);
-    if (el && el.classList.contains('open')) return false;
-  }
-  return true;
-}
-
-function showDbUpdateBanner() {
-  if (!dbPendingUpdate) return;
-  if (!isMainScreenActive()) return; // לא מציג בזמן עריכה
-  const banner = document.getElementById('dbUpdateBanner');
-  if (banner) {
-    const uploader = window._lastDbUploader;
-    const textEl = document.getElementById('dbUpdateBannerText');
-    if (textEl) textEl.textContent = uploader
-      ? `נתונים חדשים התקבלו מ${uploader}`
-      : 'התקבלו נתונים חדשים למאגר';
-    banner.style.display = 'block';
-  }
-}
-
-function hideDbUpdateBanner() {
-  const banner = document.getElementById('dbUpdateBanner');
-  if (banner) banner.style.display = 'none';
-}
-
-// נקרא כשמודל נסגר — בדוק אם יש עדכון ממתין
-function onModalClose() {
-  if (dbPendingUpdate) showDbUpdateBanner();
-}
-
-// טען מחדש את ה-DB
-async function reloadDB() {
-  hideDbUpdateBanner();
-  dbPendingUpdate = false;
-  try {
-    const data = await readFile('panther-database.json');
-    if (!data) return;
-    pantherDB = JSON.parse(data);
-    lastDbEtag = await getFileEtag('panther-database.json');
-    renderDashboard();
-    showSyncNotice();
-  } catch(e) { console.error('reloadDB error:', e); }
-}
-
 function startLiveSync() {
   if (liveSyncInterval) clearInterval(liveSyncInterval);
-  liveSyncInterval = setInterval(() => {
-    checkAndSyncOverrides();
-    checkDbUpdate();
-  }, 30000);
-  // overrides etag — תמיד עדכן
+  liveSyncInterval = setInterval(checkAndSyncOverrides, 30000);
+  // קבע etag ראשוני
   getFileEtag('panther-overrides.json').then(etag => { lastOverridesEtag = etag; });
-  // DB etag — קבע רק אם עדיין לא נקבע (מונע איפוס בקריאות חוזרות ל-startLiveSync)
-  if (lastDbEtag === null) {
-    setTimeout(() => {
-      getFileEtag('panther-database.json').then(etag => { lastDbEtag = etag; });
-    }, 3000);
-  }
 }
 
 </script>
