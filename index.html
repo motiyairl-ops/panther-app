@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v127</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v128</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,10 +593,13 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v127</div>
+        <div class="header-version">v128</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
+    <div id="dbUpdateBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a73e8,#0d47a1);color:white;text-align:center;padding:10px 16px;font-family:Rubik,sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);" onclick="reloadDB()">
+      🔄 התקבלו נתונים חדשים למאגר — לחץ כאן לטעינה מחדש
+    </div>
     <div class="header-row2">
       <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצא לאקסל / CSV</button>
       <div class="header-dates-desktop" style="display:flex;align-items:center;gap:6px;">
@@ -1364,27 +1367,44 @@ function renderChatFromContext(c) {
     }
 
     const isCallMsg = idx === callMsgIdx;
-    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
-    const senderClean = cleanName(msg.sender);
-    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
 
-    if (isSystem) {
-      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
+    // זיהוי הודעות מערכת — הסרה/הצטרפות/עזיבה
+    const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
+    const isSystemMsg = !andRe.exec(msg.sender + ': ') && (systemRe.test(msg.body) || systemRe.test(msg.sender));
+    // גם מספרי טלפון בלבד הם מערכת
+    const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
+
+    if (isSystemMsg || isPhoneOnly) {
+      const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
+      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${sysText.replace(/\*/g,'')}</span></div>`;
       return;
     }
 
+    // המר *טקסט* → bold, נקה תמונות/מחיקות
+    const formatBody = (text) => text
+      .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+      .replace(/התמונה הושמטה/g,'📷')
+      .replace(/המדיה לא נכללה/g,'📷')
+      .replace(/הודעה זו נמחקה/g,'🗑️ נמחק')
+      .replace(/<ההודעה נערכה>/g,'<span style="color:#999;font-size:10px;"> ✏️</span>')
+      .trim();
+
+    const cleanBody = formatBody(msg.body);
+    const senderClean = cleanName(msg.sender);
+
+    // בועת קריאה — ירוק כהה + גבול שמאל
     const bubbleStyle = isCallMsg
-      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
+      ? 'background:#e8f5e9;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #075e54;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
 
-    html += `<div id="ctxmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
-      <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
-        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
-        <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
-        <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
-      </div>
-    </div>`;
+    html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + (isCallMsg?'align-items:flex-start;'  :'align-items:flex-end;') + '">'
+      + '<div style="max-width:82%;padding:8px 12px;' + bubbleStyle + 'box-shadow:0 1px 3px rgba(0,0,0,0.1);">'
+      + (isCallMsg
+          ? '<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
+          : '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">' + senderClean + '</div>')
+      + '<div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + cleanBody + '</div>'
+      + '<div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">' + msg.timeStr + '</div>'
+      + '</div></div>';
   });
 
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
@@ -1459,17 +1479,31 @@ function openChatViewer(callIndex) {
     }
 
     const isCallMsg = idx === callMsgIdx;
-    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
-    const senderClean = cleanName(msg.sender);
-    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
 
-    if (isSystem) {
-      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
+    // זיהוי הודעות מערכת
+    const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
+    const isSystemMsg = systemRe.test(msg.body) || systemRe.test(msg.sender);
+    const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
+
+    if (isSystemMsg || isPhoneOnly) {
+      const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
+      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${sysText.replace(/\*/g,'')}</span></div>`;
       return;
     }
 
+    const formatBody = (text) => text
+      .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+      .replace(/התמונה הושמטה/g,'📷')
+      .replace(/המדיה לא נכללה/g,'📷')
+      .replace(/הודעה זו נמחקה/g,'🗑️ נמחק')
+      .replace(/<ההודעה נערכה>/g,'<span style="color:#999;font-size:10px;"> ✏️</span>')
+      .trim();
+
+    const cleanBody = formatBody(msg.body);
+    const senderClean = cleanName(msg.sender);
+
     const bubbleStyle = isCallMsg
-      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
+      ? 'background:#e8f5e9;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #075e54;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
 
     html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
@@ -1500,6 +1534,7 @@ function openChatViewer(callIndex) {
 function closeChatModal(e) {
   if(e&&e.target!==document.getElementById('chatOverlay')) return;
   document.getElementById('chatOverlay').classList.remove('open');
+  onModalClose();
 }
 
 // ===================== RENDER DASHBOARD =====================
@@ -1916,6 +1951,7 @@ async function confirmAssign() {
 
 function closeAssign() {
   document.getElementById('assignOverlay').classList.remove('open');
+  onModalClose();
   document.getElementById('assignList').style.display='none';
 }
 
@@ -1964,6 +2000,7 @@ function showVolCalls(name, indices) {
 function closeVolModal(e) {
   if(e&&e.target!==document.getElementById('volOverlay')) return;
   document.getElementById('volOverlay').classList.remove('open');
+  onModalClose();
 }
 
 function scrollToCall(idx) {
@@ -1971,6 +2008,7 @@ function scrollToCall(idx) {
   const call = parsedData && parsedData.calls ? parsedData.calls.find(c => c.index === idx) : null;
   
   document.getElementById('volOverlay').classList.remove('open');
+  onModalClose();
 
   // Expand date range if needed to include this call
   if (call && call.date) {
@@ -2929,7 +2967,9 @@ function scrollToUpload() {
 
 // ===================== LIVE SYNC =====================
 let lastOverridesEtag = null;
+let lastDbEtag = null;
 let liveSyncInterval = null;
+let dbPendingUpdate = false;
 let isInitialLoad = true;
 let manualChangelog = {}; // callIndex -> [{user, action, time}]
 
@@ -3029,11 +3069,69 @@ function showSyncNotice() {
   }
 }
 
+// בדוק אם המאגר הראשי השתנה — אם כן, הצג התראה
+async function checkDbUpdate() {
+  if (!driveAccessToken) return;
+  const etag = await getFileEtag('panther-database.json');
+  if (!etag) return;
+  if (lastDbEtag === null) { lastDbEtag = etag; return; }
+  if (etag === lastDbEtag) return;
+  // DB השתנה!
+  lastDbEtag = etag;
+  dbPendingUpdate = true;
+  showDbUpdateBanner();
+}
+
+// האם מסך הדאשבורד הראשי פתוח (ולא מודל/עריכה)
+function isMainScreenActive() {
+  const overlays = ['assignOverlay','volOverlay','chatOverlay'];
+  for (const id of overlays) {
+    const el = document.getElementById(id);
+    if (el && el.classList.contains('open')) return false;
+  }
+  return true;
+}
+
+function showDbUpdateBanner() {
+  if (!dbPendingUpdate) return;
+  if (!isMainScreenActive()) return; // לא מציג בזמן עריכה
+  const banner = document.getElementById('dbUpdateBanner');
+  if (banner) banner.style.display = 'block';
+}
+
+function hideDbUpdateBanner() {
+  const banner = document.getElementById('dbUpdateBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+// נקרא כשמודל נסגר — בדוק אם יש עדכון ממתין
+function onModalClose() {
+  if (dbPendingUpdate) showDbUpdateBanner();
+}
+
+// טען מחדש את ה-DB
+async function reloadDB() {
+  hideDbUpdateBanner();
+  dbPendingUpdate = false;
+  try {
+    const data = await readFile('panther-database.json');
+    if (!data) return;
+    pantherDB = JSON.parse(data);
+    lastDbEtag = await getFileEtag('panther-database.json');
+    renderDashboard();
+    showSyncNotice();
+  } catch(e) { console.error('reloadDB error:', e); }
+}
+
 function startLiveSync() {
   if (liveSyncInterval) clearInterval(liveSyncInterval);
-  liveSyncInterval = setInterval(checkAndSyncOverrides, 30000);
+  liveSyncInterval = setInterval(() => {
+    checkAndSyncOverrides();
+    checkDbUpdate();
+  }, 30000);
   // קבע etag ראשוני
   getFileEtag('panther-overrides.json').then(etag => { lastOverridesEtag = etag; });
+  getFileEtag('panther-database.json').then(etag => { lastDbEtag = etag; });
 }
 
 </script>
