@@ -378,8 +378,8 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .modal-overlay { padding:16px; align-items:center; }
   .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
   .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .chat-modal { height:92vh; border-radius:16px; overflow:hidden; display:flex; flex-direction:column; max-width:100% !important; }
-  .chat-body { -webkit-overflow-scrolling:touch; overflow-y:scroll; flex:1; min-height:0; }
+  .chat-modal { max-height:88vh; border-radius:16px; }
+  .chat-body { -webkit-overflow-scrolling:touch; }
 
   /* Regions */
   .regions-grid { grid-template-columns:repeat(2,1fr); padding:10px; gap:8px; }
@@ -410,9 +410,9 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 }
 
 /* CHAT VIEWER MODAL */
-.chat-modal { max-width:580px; height:85vh; display:flex; flex-direction:column; overflow:hidden; }
+.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; }
 .chat-modal .modal-header { flex-shrink:0; }
-.chat-body { flex:1; overflow-y:scroll; padding:16px; background:#e5ddd5; min-height:0; overscroll-behavior:contain; touch-action:pan-y; -webkit-overflow-scrolling:touch; }
+.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; min-height:0; overscroll-behavior:contain; touch-action:pan-y; -webkit-overflow-scrolling:touch; }
 .chat-bubble-wrap { display:flex; margin-bottom:10px; }
 .chat-bubble { max-width:80%; padding:8px 12px; border-radius:10px; font-size:13px; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .chat-bubble.incoming { background:white; border-radius:0 10px 10px 10px; }
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v138</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v139</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v138</div>
+        <div class="header-version">v139</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
