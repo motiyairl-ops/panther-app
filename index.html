@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v124</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v118</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v124</div>
+        <div class="header-version">v118</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -623,7 +623,6 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div class="tabs">
       <button class="tab-btn active" id="tab-dash" onclick="switchTab('dash')">📊 דאשבורד</button>
       <button class="tab-btn" id="tab-search" onclick="switchTab('search')">🔍 חיפוש</button>
-      <button class="tab-btn" id="tab-vols" onclick="switchTab('vols')">📋 כוננים</button>
     </div>
 
     <!-- DASHBOARD TAB -->
@@ -679,22 +678,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     </div>
 
     <!-- VOLUNTEERS DB TAB -->
-    <div id="tabVols" style="display:none">
-      <div class="section-card">
-        <div class="sec-header">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="sec-title">📋 מאגר כוננים</div>
-            <div class="sec-badge" id="volDbBadge">0 כוננים</div>
-          </div>
-          <button onclick="addVolManual()" class="btn-export" style="font-size:12px;">+ הוסף ידנית</button>
-        </div>
-        <div style="padding:12px 16px;border-bottom:1.5px solid var(--divider);">
-          <input id="volDbSearch" type="text" placeholder="חיפוש כונן..." oninput="renderVolDb()"
-            style="width:100%;padding:9px 13px;border:1.5px solid var(--bg2);border-radius:8px;font-family:Rubik,sans-serif;font-size:14px;outline:none;direction:rtl;">
-        </div>
-        <div id="volDbList"></div>
-      </div>
-    </div>
+    <div id="tabVols" style="display:none"></div>
 
 
 
@@ -821,7 +805,7 @@ async function processText(text, fileName, fileSize) {
     try {
       console.log('[processText] saving to Drive...');
       document.getElementById('dzSub').textContent = `⏳ מעבד ושומר ב-Drive...`;
-      await saveChatToDrive(text, fileName);
+      await saveChatToDrive(text);
       console.log('[processText] saved. pantherDB calls:', pantherDB?.calls?.length);
       document.getElementById('dzSub').textContent = `✅ ${fileName} — נשמר ב-Drive`;
     } catch(e) { console.error('processText save error:', e); }
@@ -938,7 +922,7 @@ function parseWhatsApp(text, startDate, endDate) {
   const OTHER_HELPED_RE = /מישהו שם חילץ|מישהו עזר|חילץ אותו|חילצו אותו|מישהו פה עזר|עזרה מקומית/i;
 
   // End-of-call (cancelled/no credit)
-  const END_RE = /הסתדר לבד|הסתדרו לבד|יצא לבד|יצאו לבד|חולץ ע["״]י חבר|חולץ ע["״]י מכונא|בוטל|ביטל|סיום באפליקציה|חזלש|חזרנו לשלום/i;
+  const END_RE = /הסתדר לבד|הסתדרו לבד|יצא לבד|יצאו לבד|חולץ ע["״]י חבר|חולץ ע["״]י מכונא|בוטל|ביטל|סיום באפליקציה/i;
 
   // Intent patterns
   const INTENT_RE = /פרטים בבקשה|שלח פרטים|שלחי פרטים|^אני יכול|^אני לוקח|^אני בדרך|בדרך אליהם|^אני עולה|^אני מגיע|^שלח אני|^אני פה|^יוצא|^יוצאת/i;
@@ -968,7 +952,7 @@ function parseWhatsApp(text, startDate, endDate) {
   // "נלקח ע"י [שם]" — taken by someone, wait for SAB confirmation
   const TAKEN_BY_RE = /נלקח\s+ע["״]י\s+(.+)/i;
 
-  const DISPATCHERS = /מוקד|שי כלאף|נתי\b|נתי.*פנתרים|נתי.*בר|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
+  const DISPATCHERS = /מוקד|שי כלאף|נתי.*פנתרים|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
 
   // Helper: extract credited names from SAB_OF match
   function extractCreditedNames(sabText, writerName) {
@@ -1015,10 +999,7 @@ function parseWhatsApp(text, startDate, endDate) {
     const globalIdx = messages.findIndex(m=>m.dateStr===msg.dateStr&&m.timeStr===msg.timeStr&&m.sender===msg.sender);
 
     let handler='', status='open', closingNote='', intentCandidate='', intentSender='', handlerIsSingle=false;
-    // חלון זמן: עד 4 שעות משעת הקריאה
-    const [callH, callM] = msg.timeStr.split(':').map(Number);
-    const callMinsTotal = callH * 60 + callM;
-    const lookEnd = messages.length;
+    const lookEnd = Math.min(globalIdx+70, messages.length);
 
     for (let j=globalIdx+1; j<lookEnd; j++) {
       const next = messages[j];
@@ -1074,15 +1055,6 @@ function parseWhatsApp(text, startDate, endDate) {
         handler = '';
         break;
       }
-
-      // עצור אם עברו 4 שעות משעת הקריאה
-      const [nextH, nextM] = next.timeStr.split(':').map(Number);
-      const nextMinsTotal = nextH * 60 + nextM;
-      const diffMins = nextMinsTotal >= callMinsTotal
-        ? nextMinsTotal - callMinsTotal
-        : (nextMinsTotal + 1440) - callMinsTotal; // חצות
-      if (next.dateStr !== msg.dateStr && diffMins > 240) break;
-      if (next.dateStr === msg.dateStr && diffMins > 240) break;
 
       // Stop if new call begins (with grace period)
       if (j > globalIdx+3 && CALL_RE.exec(nb)) break;
@@ -1329,61 +1301,25 @@ function renderChatFromContext(c) {
   }
   if (cur) msgs.push(cur);
 
-  // מצא את הודעת הקריאה לפי שעה ±2 דקות
-  const [callH, callM] = c.time.split(':').map(Number);
-  const callMins = callH * 60 + callM;
-  const callMsgIdx = msgs.findIndex(m => {
-    if (m.dateStr !== c.date) return false;
-    const [mh, mm] = m.timeStr.split(':').map(Number);
-    return Math.abs(mh * 60 + mm - callMins) <= 2;
-  }) ?? 0;
-
   let html = '';
-  let lastDate = '';
   msgs.forEach((msg, idx) => {
-    // הפרדת תאריך
-    if (msg.dateStr !== lastDate) {
-      lastDate = msg.dateStr;
-      html += `<div style="text-align:center;margin:10px 0;"><span style="background:rgba(0,0,0,0.12);color:#555;font-size:11px;padding:3px 10px;border-radius:10px;">${msg.dateStr}</span></div>`;
-    }
-
-    const isCallMsg = idx === callMsgIdx;
-    const cleanBody = msg.body.replace(/\*/g,'').replace(/התמונה הושמטה/g,'📷').replace(/הודעה זו נמחקה/g,'🗑️ נמחק').trim();
-    const senderClean = cleanName(msg.sender);
-    const isSystem = msg.sender.includes('ידידים פנתר') || msg.sender.match(/^\+972/);
-
-    if (isSystem) {
-      html += `<div style="text-align:center;margin:6px 0;"><span style="background:rgba(0,0,0,0.08);color:#666;font-size:11px;padding:2px 10px;border-radius:8px;">${cleanBody}</span></div>`;
-      return;
-    }
-
-    const bubbleStyle = isCallMsg
-      ? 'background:#dcf8c6;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;'
-      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-
-    html += `<div id="ctxmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
-      <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
-        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
-        <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
-        <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
-      </div>
+    const isCallMsg = idx === 0;
+    const cleanBody = msg.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const bg = isCallMsg ? 'rgba(255,140,0,0.08)' : 'transparent';
+    const border = isCallMsg ? '2px solid var(--orange)' : '1px solid var(--divider)';
+    html += `<div style="padding:8px 10px;border-radius:8px;margin-bottom:6px;background:${bg};border:${border};">
+      <div style="font-size:11px;font-weight:700;color:var(--blue-dark);margin-bottom:2px;">${msg.sender}</div>
+      <div style="font-size:13px;color:var(--text);">${cleanBody}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${msg.timeStr}</div>
     </div>`;
   });
 
-  document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
+  document.getElementById('chatMessages').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
-
-  // Scroll לקריאה עם הדגשה כתומה
   setTimeout(() => {
-    const target = document.getElementById(`ctxmsg-${callMsgIdx}`);
-    if (target) {
-      target.scrollIntoView({ block: 'center' });
-      target.style.outline = '2px solid var(--orange)';
-      target.style.borderRadius = '6px';
-      setTimeout(() => { target.style.outline = ''; }, 2500);
-    }
-  }, 80);
+    const el = document.querySelector('.chat-call-highlight');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
 }
 
 function openChatViewer(callIndex) {
@@ -1393,12 +1329,11 @@ function openChatViewer(callIndex) {
   if (!rawText && c?.rawContext) { renderChatFromContext(c); return; }
   if (!rawText) { alert('לא נמצא קובץ שיחה'); return; }
   const lines = rawText.split('\n');
-  const msgReIOS = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
-  const msgReAnd = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+  const msgRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
   const allMsgs = [];
   let cur = null;
   for (const line of lines) {
-    const m = msgReIOS.exec(line) || msgReAnd.exec(line);
+    const m = msgRe.exec(line);
     if (m) {
       if (cur) allMsgs.push(cur);
       cur = {
@@ -1411,14 +1346,8 @@ function openChatViewer(callIndex) {
   }
   if (cur) allMsgs.push(cur);
 
-  // Find the call message — חיפוש גמיש: תאריך מדויק + שעה ±2 דקות
-  const [callH, callM] = c.time.split(':').map(Number);
-  const callMins = callH * 60 + callM;
-  const callMsgIdx = allMsgs.findIndex(m => {
-    if (m.dateStr !== c.date) return false;
-    const [mh, mm] = m.timeStr.split(':').map(Number);
-    return Math.abs(mh * 60 + mm - callMins) <= 2;
-  });
+  // Find the exact call message
+  const callMsgIdx = allMsgs.findIndex(m => m.dateStr===c.date && m.timeStr===c.time);
   if (callMsgIdx < 0) {
     // נסה rawContext מה-DB
     if (c.rawContext) {
@@ -1568,10 +1497,9 @@ function renderDashboard(s,e) {
   const counts = [...new Set(vs.map(([,d])=>d.count))].sort((a,b)=>b-a);
   const [top, second, third] = counts;
   const getMedal = (count) => {
-    if (count < 2) return null; // תנאי סף: מדליה רק אם יותר מקריאה אחת
     if (count === top) return 'gold';
     if (count === second) return 'silver';
-    if (count === third) return 'bronze';
+    if (count === third && count > 1) return 'bronze';
     return null;
   };
   document.getElementById('volList').innerHTML=vs.length?vs.map(([name,data],i)=>{
@@ -1722,11 +1650,8 @@ function doSearch() {
 function renderVolDb() {
   const q=(document.getElementById('volDbSearch')||{value:''}).value.toLowerCase();
   const vols=[...volDatabase].filter(v=>!q||v.toLowerCase().includes(q)).sort();
-  const badge=document.getElementById('volDbBadge');
-  const list=document.getElementById('volDbList');
-  if(badge) badge.textContent=`${volDatabase.size} כוננים`;
-  if(!list) return;
-  list.innerHTML=vols.length?vols.map(v=>`
+  document.getElementById('volDbBadge').textContent=`${volDatabase.size} כוננים`;
+  document.getElementById('volDbList').innerHTML=vols.length?vols.map(v=>`
     <div style="padding:12px 20px;border-bottom:1px solid var(--bg);display:flex;align-items:center;">
       <div style="font-size:14px;font-weight:600">🙋 ${v}</div>
     </div>`).join(''):'<div class="empty-msg">אין כוננים במאגר</div>';
@@ -2350,8 +2275,7 @@ function resolveHandler(rawHandler, nameDict) {
 
 async function mergeCallsIntoDB(newCalls, db, updateNameDict) {
   const existing = db.calls;
-  // בנה map לפי id לחיפוש מהיר
-  const existingMap = new Map(existing.map(c => [c.id, c]));
+  const existingIds = new Set(existing.map(c => c.id));
   let added = 0;
 
   for (const call of newCalls) {
@@ -2359,34 +2283,26 @@ async function mergeCallsIntoDB(newCalls, db, updateNameDict) {
     call.id = id;
 
     // בדוק כפילות עם סובלנות זמן (±5 דקות = אותו slot)
+    if (existingIds.has(id)) continue;
+
+    // בדוק גם slots סמוכים (±1) למקרה גבולי
     const [h, m] = call.time.split(':').map(Number);
     const slot = Math.floor((h * 60 + m) / 5);
     const locKey = (call.location || '').replace(/[^\u05d0-\u05ea]/g, '').substring(0, 12);
     const regKey = (call.region || '').replace(/[*_\s]/g, '').substring(0, 6);
     const altId1 = `${call.date}_${slot-1}_${regKey}_${locKey}`;
     const altId2 = `${call.date}_${slot+1}_${regKey}_${locKey}`;
+    if (existingIds.has(altId1) || existingIds.has(altId2)) continue;
 
-    const matchId = existingMap.has(id) ? id
-                  : existingMap.has(altId1) ? altId1
-                  : existingMap.has(altId2) ? altId2
-                  : null;
+    existing.push(call);
+    existingIds.add(id);
+    added++;
+  }
 
-    if (matchId) {
-      // קריאה קיימת — אם מקור האמת: עדכן שמות ו-rawContext
-      // אבל לעולם אל תדרוס עריכות ידניות
-      if (updateNameDict) {
-        const ex = existingMap.get(matchId);
-        ex.handlerClean = call.handlerClean;
-        ex.rawSender    = call.rawSender;
-        ex.rawContext   = call.rawContext || ex.rawContext;
-        // שמור: ex.manualAssignment, ex.manualStatus, ex.manualNote — לא נגענו בהם
-      }
-    } else {
-      // קריאה חדשה — הוסף
-      existing.push(call);
-      existingMap.set(id, call);
-      added++;
-    }
+  // עדכן מילון שמות רק אם מקור האמת
+  if (updateNameDict) {
+    const newDict = buildNameDict(newCalls);
+    db.nameDict = { ...db.nameDict, ...newDict };
   }
 
   db.meta = db.meta || {};
@@ -2432,12 +2348,8 @@ async function fetchUserName(token) {
   } catch(e) { console.error('Could not fetch user name:', e); }
 }
 
-function isSourceOfTruth(fileName) {
-  // מקור אמת לפי מייל
-  if (currentUserEmail && currentUserEmail.toLowerCase() === SOURCE_OF_TRUTH_EMAIL.toLowerCase()) return true;
-  // מקור אמת לפי שם קובץ (לצורכי בדיקה — קובץ של שי)
-  if (fileName && fileName.includes('שי')) return true;
-  return false;
+function isSourceOfTruth() {
+  return currentUserEmail && currentUserEmail.toLowerCase() === SOURCE_OF_TRUTH_EMAIL.toLowerCase();
 }
 
 let driveFileIds = {}; // cache: filename -> fileId
@@ -2615,15 +2527,15 @@ function loadParsedFromDB(db, startDate, endDate) {
   const sDate = startDate ? localDate(startDate) : null;
   const eDate = endDate ? (() => { const d = localDate(endDate); d.setDate(d.getDate()+1); return d; })() : null;
 
+  let callIndex = 0;
   db.calls.forEach((dbCall, i) => {
     // סינון תאריכים
     if (sDate || eDate) {
       const [dd, mm, yy] = dbCall.date.split('.');
       const callDate = new Date(yy, mm-1, dd);
-      if (sDate && callDate < sDate) return;
-      if (eDate && callDate >= eDate) return;
+      if (sDate && callDate < sDate) { callIndex++; return; }
+      if (eDate && callDate >= eDate) { callIndex++; return; }
     }
-    const callIndex = calls.length; // index = מיקום במערך המסונן
     // פתור שם כונן לפי מילון
     const rawHandler = dbCall.rawSender || '';
     const resolvedHandler = resolveHandler(rawHandler, nameDict);
@@ -2672,6 +2584,7 @@ function loadParsedFromDB(db, startDate, endDate) {
     if (!regions[call.region]) regions[call.region] = { total: 0, sab: 0 };
     regions[call.region].total++;
     if (status === 'sab') regions[call.region].sab++;
+    callIndex++;
   });
 
   parsedData = { calls, volunteers, regions };
@@ -2701,7 +2614,7 @@ async function loadFromDrive() {
 }
 
 // ---- SAVE CHAT TO DRIVE ----
-async function saveChatToDrive(text, fileName) {
+async function saveChatToDrive(text) {
   if (!driveAccessToken) return;
   // שמור טקסט גולמי לגיבוי
   await writeFile('panther-chat.txt', text, 'text/plain');
@@ -2763,9 +2676,9 @@ async function saveChatToDrive(text, fileName) {
       };
     });
     const db = await loadDatabase() || { calls: [], nameDict: {}, meta: {} };
-    console.log('[saveChatToDrive] newCalls:', newCalls.length, 'isSourceOfTruth:', isSourceOfTruth(fileName), 'fileName:', fileName);
+    console.log('[saveChatToDrive] newCalls:', newCalls.length, 'isSourceOfTruth:', isSourceOfTruth());
     console.log('[saveChatToDrive] sample rawContext:', newCalls[0]?.rawContext?.substring(0,80));
-    const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth(fileName));
+    const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth());
     await saveDatabase(mergedDb);
     pantherDB = mergedDb; // עדכן זיכרון
     console.log(`DB: נוספו ${added} קריאות חדשות, סה"כ ${mergedDb.calls.length}`);
