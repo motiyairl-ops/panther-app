@@ -188,7 +188,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .search-count { padding:8px 16px; font-size:13px; color:var(--text-muted); border-bottom:1.5px solid var(--divider); }
 
 /* ASSIGN MODAL */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(18,37,58,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; overscroll-behavior:contain; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(18,37,58,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
 .modal-overlay.open { display:flex; }
 .modal { background:white; border-radius:16px; width:100%; max-width:460px; overflow:hidden; box-shadow:var(--shadow-lg); animation:fadeUp 0.25s ease; }
 .modal-header { padding:16px 20px; border-bottom:1px solid var(--bg); display:flex; align-items:center; justify-content:space-between; background:var(--blue-dark); color:white; }
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v131</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v133</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v131</div>
+        <div class="header-version">v133</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1410,6 +1410,8 @@ function renderChatFromContext(c) {
 
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
+  // iOS: נעל גלילת הדף מאחורה
+  document.body.style.overflow = 'hidden';
 
   // Scroll לקריאה עם הדגשה כתומה
   setTimeout(() => {
@@ -1520,6 +1522,8 @@ function openChatViewer(callIndex) {
 
   document.getElementById('chatBody').innerHTML = html;
   document.getElementById('chatOverlay').classList.add('open');
+  // iOS: נעל גלילת הדף מאחורה
+  document.body.style.overflow = 'hidden';
 
   // Scroll to call message
   setTimeout(() => {
@@ -1536,8 +1540,35 @@ function openChatViewer(callIndex) {
 function closeChatModal(e) {
   if(e&&e.target!==document.getElementById('chatOverlay')) return;
   document.getElementById('chatOverlay').classList.remove('open');
+  // iOS: שחרר גלילת הדף
+  document.body.style.overflow = '';
+  document.body.style.position = '';
+  document.body.style.width = '';
   onModalClose();
 }
+
+// iOS Safari scroll fix — מונע גלילת הדף מאחורה כשהצ'אט פתוח
+(function() {
+  let startY = 0;
+  document.addEventListener('DOMContentLoaded', () => {
+    const chatBody = document.getElementById('chatBody');
+    if (!chatBody) return;
+    chatBody.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+    chatBody.addEventListener('touchmove', e => {
+      const el = chatBody;
+      const scrollTop = el.scrollTop;
+      const scrollHeight = el.scrollHeight;
+      const clientHeight = el.clientHeight;
+      const deltaY = e.touches[0].clientY - startY;
+      // בגבול העליון — מנע גלילה למעלה (תפוס ידית הדף)
+      if (scrollTop <= 0 && deltaY > 0) { e.preventDefault(); return; }
+      // בגבול התחתון — מנע גלילה למטה
+      if (scrollTop + clientHeight >= scrollHeight && deltaY < 0) { e.preventDefault(); return; }
+    }, { passive: false });
+  });
+})();
 
 // ===================== RENDER DASHBOARD =====================
 function renderDashboard(s,e) {
@@ -2391,6 +2422,8 @@ async function saveDatabase(db) {
   if (!driveAccessToken) return;
   try {
     await writeFile('panther-database.json', JSON.stringify(db), 'application/json');
+    // עדכן etag אחרי כתיבה — המכשיר שמעלה לא יקבל באנר "נתונים חדשים"
+    getFileEtag('panther-database.json').then(etag => { if (etag) lastDbEtag = etag; });
   } catch(e) { console.error('saveDatabase error:', e); }
 }
 
