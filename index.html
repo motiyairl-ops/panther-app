@@ -188,7 +188,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .search-count { padding:8px 16px; font-size:13px; color:var(--text-muted); border-bottom:1.5px solid var(--divider); }
 
 /* ASSIGN MODAL */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(18,37,58,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(18,37,58,0.55); z-index:1000; align-items:center; justify-content:center; padding:20px; overscroll-behavior:contain; }
 .modal-overlay.open { display:flex; }
 .modal { background:white; border-radius:16px; width:100%; max-width:460px; overflow:hidden; box-shadow:var(--shadow-lg); animation:fadeUp 0.25s ease; }
 .modal-header { padding:16px 20px; border-bottom:1px solid var(--bg); display:flex; align-items:center; justify-content:space-between; background:var(--blue-dark); color:white; }
@@ -378,8 +378,8 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .modal-overlay { padding:16px; align-items:center; }
   .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
   .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .chat-modal { max-height:88vh; border-radius:16px; display:flex; flex-direction:column; }
-  .chat-body { overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; min-height:0; }
+  .chat-modal { max-height:92vh; border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
+  .chat-body { overflow-y:scroll; -webkit-overflow-scrolling:touch; flex:1; min-height:0; overscroll-behavior:contain; touch-action:pan-y; }
 
   /* Regions */
   .regions-grid { grid-template-columns:repeat(2,1fr); padding:10px; gap:8px; }
@@ -412,7 +412,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 /* CHAT VIEWER MODAL */
 .chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; }
 .chat-modal .modal-header { flex-shrink:0; }
-.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; min-height:0; }
+.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; min-height:0; overscroll-behavior:contain; touch-action:pan-y; }
 .chat-bubble-wrap { display:flex; margin-bottom:10px; }
 .chat-bubble { max-width:80%; padding:8px 12px; border-radius:10px; font-size:13px; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .chat-bubble.incoming { background:white; border-radius:0 10px 10px 10px; }
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v130</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v131</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v130</div>
+        <div class="header-version">v131</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1391,22 +1391,18 @@ function renderChatFromContext(c) {
 
     const cleanBody = formatBody(msg.body);
     const senderClean = cleanName(msg.sender);
-    const DISPATCH_RE = /מוקד|שי כלאף|נתי\b|נתי.*פנתרים|נתי.*בר|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
-    const isDispatchMsg = DISPATCH_RE.test(msg.sender);
 
-    // בועת קריאה — כחול. דיספאצ'ר — כחול בהיר. שאר — לבן
+    // רק בועת קריאה — כחול. שאר — לבן
     const bubbleStyle = isCallMsg
       ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
-      : isDispatchMsg
-        ? 'background:#e8f0fe;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #4285f4;'
-        : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-    const align = (isCallMsg || isDispatchMsg) ? 'align-items:flex-start;' : 'align-items:flex-end;';
+      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+    const align = isCallMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
 
     html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + align + '">'
       + '<div style="max-width:82%;padding:8px 12px;' + bubbleStyle + 'box-shadow:0 1px 3px rgba(0,0,0,0.1);">'
       + (isCallMsg
           ? '<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
-          : '<div style="font-size:11px;font-weight:700;color:' + (isDispatchMsg ? '#4285f4' : 'var(--orange)') + ';margin-bottom:3px;">' + senderClean + '</div>')
+          : '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">' + senderClean + '</div>')
       + '<div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + cleanBody + '</div>'
       + '<div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">' + msg.timeStr + '</div>'
       + '</div></div>';
@@ -1506,16 +1502,11 @@ function openChatViewer(callIndex) {
 
     const cleanBody = formatBody(msg.body);
     const senderClean = cleanName(msg.sender);
-    const DISPATCH_RE = /מוקד|שי כלאף|נתי\b|נתי.*פנתרים|נתי.*בר|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
-    const isDispatchMsg = DISPATCH_RE.test(msg.sender);
-
     const bubbleStyle = isCallMsg
       ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
-      : isDispatchMsg
-        ? 'background:#e8f0fe;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #4285f4;'
-        : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-    const align = (isCallMsg || isDispatchMsg) ? 'align-items:flex-start;' : 'align-items:flex-end;';
-    const senderColor = isCallMsg ? '#1a73e8' : isDispatchMsg ? '#4285f4' : 'var(--orange)';
+      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+    const align = isCallMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
+    const senderColor = isCallMsg ? '#1a73e8' : 'var(--orange)';
     const senderPrefix = isCallMsg ? '📞 קריאה – ' : '';
 
     html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${align}">
@@ -1713,7 +1704,7 @@ function callRowHtml(c,i) {
     : `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         <button class="btn-assign" onclick="event.stopPropagation();openAssign(${c.index})">+ שייך כונן</button>
         ${c.status==='open' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualCancel(${c.index})">✕ סמן כבוטל</button>` : ''}
-        ${c.status==='cancelled' && manualStatuses[c.index]==='cancelled' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualUncancel(${c.index})" style="background:rgba(39,174,96,0.12);color:var(--green);">↩ בטל ביטול</button>` : ''}
+        ${c.status==='cancelled' && manualStatuses[c.index]==='cancelled' ? `<button class="btn-cancel-manual" onclick="event.stopPropagation();manualUncancel(${c.index})" style="background:rgba(39,174,96,0.12);color:var(--green);">↩ פתח מחדש</button>` : ''}
       </div>`;
 
   const isMuted = c.status==='cancelled' || c.status==='transferred';
@@ -3174,12 +3165,14 @@ function startLiveSync() {
     checkAndSyncOverrides();
     checkDbUpdate();
   }, 30000);
-  // קבע etag ראשוני — עם עיכוב קצר כדי לאפשר לכתיבות מכשירים אחרים להתייצב
+  // overrides etag — תמיד עדכן
   getFileEtag('panther-overrides.json').then(etag => { lastOverridesEtag = etag; });
-  // DB: קבע etag רק אחרי 5 שניות — מונע באנר מיותר כשמכשיר אחר רק נפתח
-  setTimeout(() => {
-    getFileEtag('panther-database.json').then(etag => { lastDbEtag = etag; });
-  }, 5000);
+  // DB etag — קבע רק אם עדיין לא נקבע (מונע איפוס בקריאות חוזרות ל-startLiveSync)
+  if (lastDbEtag === null) {
+    setTimeout(() => {
+      getFileEtag('panther-database.json').then(etag => { lastDbEtag = etag; });
+    }, 3000);
+  }
 }
 
 </script>
