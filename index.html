@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v118</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v105</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v118</div>
+        <div class="header-version">v105</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -754,7 +754,7 @@ function loadFile(file) {
   } else {
     // Accept any text file regardless of name
     const r = new FileReader();
-    r.onload = async e => {
+    r.onload = e => {
       const text = e.target.result;
       // Validate it looks like a WhatsApp export (iOS or Android format)
       const looksLikeWA = /\[\d{1,2}\.\d{1,2}\.\d{4},/.test(text) || // iOS: [25.02.2026,
@@ -764,7 +764,7 @@ function loadFile(file) {
         alert('הקובץ לא נראה כמו ייצוא וואטסאפ.\nוודא שייצאת את הצ\'אט מהאפליקציה.');
         return;
       }
-      await processText(text, file.name, file.size);
+      processText(text, file.name, file.size);
     };
     r.readAsText(file, 'utf-8');
   }
@@ -789,29 +789,16 @@ async function loadZipFile(file) {
     txtFile = txtFile || fallback;
     if (!txtFile) { alert('לא נמצא קובץ טקסט בתוך ה-ZIP'); return; }
     const text = await txtFile.async('string');
-    await processText(text, file.name, file.size);
+    processText(text, file.name, file.size);
   } catch(err) {
     alert('שגיאה בפתיחת קובץ ZIP: ' + err.message);
   }
 }
 
-async function processText(text, fileName, fileSize) {
-  console.log('[processText] start, length:', text.length);
+function processText(text, fileName, fileSize) {
   rawText = text;
   document.getElementById('dzSub').textContent = `✓ נטען: ${fileName} (${(fileSize/1024).toFixed(0)} KB)`;
   document.getElementById('analyzeBtn').disabled = false;
-  // בנה/עדכן DB אם מחובר ל-Drive
-  if (driveAccessToken) {
-    try {
-      console.log('[processText] saving to Drive...');
-      document.getElementById('dzSub').textContent = `⏳ מעבד ושומר ב-Drive...`;
-      await saveChatToDrive(text);
-      console.log('[processText] saved. pantherDB calls:', pantherDB?.calls?.length);
-      document.getElementById('dzSub').textContent = `✅ ${fileName} — נשמר ב-Drive`;
-    } catch(e) { console.error('processText save error:', e); }
-  } else {
-    console.log('[processText] no driveAccessToken');
-  }
   const dates = extractDates(rawText).sort((a,b)=>a-b);
   if (dates.length) {
     const last = dates[dates.length-1];
@@ -839,7 +826,7 @@ async function processText(text, fileName, fileSize) {
         const m = msgRe.exec(lines[i]);
         if (m) { lastDate = m[1]; break; }
       }
-      showSmartUpload(pantherDB ? (pantherDB.meta?.lastDate || lastDate) : lastDate, pantherDB ? pantherDB.calls.length : lines.length);
+      showSmartUpload(lastDate, lines.length);
       document.getElementById('dzSub').textContent = `✓ מאגר עודכן ב-Drive`;
     });
   }
@@ -1196,32 +1183,7 @@ function dayHe(d) { return ["יום א","יום ב","יום ג","יום ד","י�
 
 // ===================== ANALYZE =====================
 async function analyze() {
-  // אם יש DB בזיכרון — השתמש בו ישירות
-  if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
-    let s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
-    if (!s || !e) {
-      // ברירת מחדל: שבוע אחרון לפי תאריך אחרון ב-DB
-      const lastDateStr = pantherDB.meta?.lastDate;
-      if (lastDateStr) {
-        const [d,mo,y] = lastDateStr.split('.');
-        const last = new Date(y, mo-1, d);
-        s = fmtDate(getWeekStartSunday(last));
-        e = fmtDate(getWeekEndSaturday(last));
-        document.getElementById('weekStart').value = s;
-        document.getElementById('weekEnd').value = e;
-      }
-    }
-    if(s) { calState.selectedStart=new Date(s); document.getElementById('btnStart').textContent='📅 '+formatDisplayDate(new Date(s)); }
-    if(e) { calState.selectedEnd=new Date(e); document.getElementById('btnEnd').textContent='📅 '+formatDisplayDate(new Date(e)); }
-    loadParsedFromDB(pantherDB, s, e);
-    document.getElementById('uploadScreen').style.display='none';
-    document.getElementById('dashboard').style.display='block';
-    renderVolDb();
-    startLiveSync();
-    return;
-  }
-
-  // אין DB — עבוד עם TXT
+  // אם אין טקסט בזיכרון אבל יש מאגר ב-Drive — טען אוטומטית
   if (!rawText && driveAccessToken) {
     const chatText = await readFile('panther-chat.txt');
     if (chatText) {
@@ -1236,6 +1198,7 @@ async function analyze() {
 
   let s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
   if (!s || !e) {
+    // Use default dates from file
     const dates = extractDates(rawText).sort((a,b)=>a-b);
     if (dates.length) {
       const last = dates[dates.length-1];
@@ -1276,58 +1239,8 @@ function handleCallClick(event, callIndex) {
   // Mobile uses long press via touch events
 }
 
-
-function renderChatFromContext(c) {
-  document.getElementById('chatModalTitle').textContent = `📍 ${c.location}`;
-  document.getElementById('chatModalSub').textContent = `${c.date} · ${c.time} · מרחב ${c.region}`;
-
-  const lines = (c.rawContext || '').split('\n');
-  const iosRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
-  const andRe = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
-
-  const msgs = [];
-  let cur = null;
-  for (const line of lines) {
-    let m = iosRe.exec(line) || andRe.exec(line);
-    if (m) {
-      if (cur) msgs.push(cur);
-      cur = {
-        dateStr: `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`,
-        timeStr: `${m[4].padStart(2,'0')}:${m[5]}`,
-        sender: m[6].replace(/^~ /,'').trim(),
-        body: m[7].trim()
-      };
-    } else if (cur) cur.body += '\n' + line;
-  }
-  if (cur) msgs.push(cur);
-
-  let html = '';
-  msgs.forEach((msg, idx) => {
-    const isCallMsg = idx === 0;
-    const cleanBody = msg.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-    const bg = isCallMsg ? 'rgba(255,140,0,0.08)' : 'transparent';
-    const border = isCallMsg ? '2px solid var(--orange)' : '1px solid var(--divider)';
-    html += `<div style="padding:8px 10px;border-radius:8px;margin-bottom:6px;background:${bg};border:${border};">
-      <div style="font-size:11px;font-weight:700;color:var(--blue-dark);margin-bottom:2px;">${msg.sender}</div>
-      <div style="font-size:13px;color:var(--text);">${cleanBody}</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${msg.timeStr}</div>
-    </div>`;
-  });
-
-  document.getElementById('chatMessages').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
-  document.getElementById('chatOverlay').classList.add('open');
-  setTimeout(() => {
-    const el = document.querySelector('.chat-call-highlight');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
-}
-
 function openChatViewer(callIndex) {
   const c = parsedData.calls[callIndex];
-  console.log('[openChatViewer] call:', c?.date, c?.time, 'rawContext len:', c?.rawContext?.length, 'rawText len:', rawText?.length);
-  // אם אין rawText אבל יש rawContext — השתמש בו ישירות
-  if (!rawText && c?.rawContext) { renderChatFromContext(c); return; }
-  if (!rawText) { alert('לא נמצא קובץ שיחה'); return; }
   const lines = rawText.split('\n');
   const msgRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
   const allMsgs = [];
@@ -1348,15 +1261,7 @@ function openChatViewer(callIndex) {
 
   // Find the exact call message
   const callMsgIdx = allMsgs.findIndex(m => m.dateStr===c.date && m.timeStr===c.time);
-  if (callMsgIdx < 0) {
-    // נסה rawContext מה-DB
-    if (c.rawContext) {
-      renderChatFromContext(c);
-      return;
-    }
-    alert('לא נמצאה ההודעה בקובץ');
-    return;
-  }
+  if (callMsgIdx < 0) { alert('לא נמצאה ההודעה בקובץ'); return; }
 
   document.getElementById('chatModalTitle').textContent = `📍 ${c.location}`;
   document.getElementById('chatModalSub').textContent = `${c.date} · ${c.time} · מרחב ${c.region}`;
@@ -2205,13 +2110,9 @@ function onUploadDateChange() {
 function reanalyze() {
   const s=document.getElementById('weekStart').value;
   const e=document.getElementById('weekEnd').value;
-  if(!s||!e) return;
-  if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
-    loadParsedFromDB(pantherDB, s, e);
-  } else if (rawText) {
-    parsedData = parseWhatsApp(rawText, localDate(s), localDate(e));
-    renderDashboard(s,e);
-  }
+  if(!s||!e||!rawText) return;
+  parsedData = parseWhatsApp(rawText, localDate(s), localDate(e));
+  renderDashboard(s,e);
 }
 
 
@@ -2480,8 +2381,7 @@ async function checkExistingData() {
     if (dbRaw) {
       pantherDB = JSON.parse(dbRaw);
       const meta = pantherDB.meta || {};
-      const lastDate = meta.lastDate || meta.lastMerge?.substring(0,10).split('-').reverse().join('.') || '—';
-      showSmartUpload(lastDate, pantherDB.calls.length);
+      showSmartUpload(meta.lastDate || '—', pantherDB.calls.length);
       return;
     }
     // fallback ל-panther-meta.json (גרסה ישנה)
@@ -2516,26 +2416,14 @@ function showSmartUpload(lastDate, count) {
 }
 
 
-function loadParsedFromDB(db, startDate, endDate) {
+function loadParsedFromDB(db) {
   // המר DB חזרה לפורמט parsedData שרenderDashboard מצפה לו
   const nameDict = db.nameDict || {};
   const calls = [];
   const volunteers = {};
   const regions = {};
 
-  // סנן לפי תאריכים
-  const sDate = startDate ? localDate(startDate) : null;
-  const eDate = endDate ? (() => { const d = localDate(endDate); d.setDate(d.getDate()+1); return d; })() : null;
-
-  let callIndex = 0;
   db.calls.forEach((dbCall, i) => {
-    // סינון תאריכים
-    if (sDate || eDate) {
-      const [dd, mm, yy] = dbCall.date.split('.');
-      const callDate = new Date(yy, mm-1, dd);
-      if (sDate && callDate < sDate) { callIndex++; return; }
-      if (eDate && callDate >= eDate) { callIndex++; return; }
-    }
     // פתור שם כונן לפי מילון
     const rawHandler = dbCall.rawSender || '';
     const resolvedHandler = resolveHandler(rawHandler, nameDict);
@@ -2551,7 +2439,7 @@ function loadParsedFromDB(db, startDate, endDate) {
     const closingNote = manualNotes[i] !== undefined ? manualNotes[i] : (dbCall.closingNote || '');
 
     const call = {
-      index: callIndex,
+      index: i,
       date: dbCall.date,
       time: dbCall.time,
       dayName: dbCall.dayName || '',
@@ -2576,7 +2464,7 @@ function loadParsedFromDB(db, startDate, endDate) {
       names.forEach(name => {
         if (!volunteers[name]) volunteers[name] = { count: 0, callIndices: [] };
         volunteers[name].count++;
-        volunteers[name].callIndices.push(callIndex);
+        volunteers[name].callIndices.push(i);
       });
     }
 
@@ -2584,7 +2472,6 @@ function loadParsedFromDB(db, startDate, endDate) {
     if (!regions[call.region]) regions[call.region] = { total: 0, sab: 0 };
     regions[call.region].total++;
     if (status === 'sab') regions[call.region].sab++;
-    callIndex++;
   });
 
   parsedData = { calls, volunteers, regions };
@@ -2599,7 +2486,7 @@ async function loadFromDrive() {
   // נסה לטעון מ-DB קודם
   if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
     document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
-    loadParsedFromDB(pantherDB, s, e);
+    loadParsedFromDB(pantherDB);
     startLiveSync();
     return;
   }
@@ -2620,14 +2507,11 @@ async function saveChatToDrive(text) {
   await writeFile('panther-chat.txt', text, 'text/plain');
   // Save meta
   const lines = text.split('\n');
-  const msgReIOS2 = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4})/;
-  const msgReAnd2 = /^(\d{1,2})\.(\d{1,2})\.(\d{4}),\s*\d{1,2}:\d{2}\s*[-–]/;
+  const msgRe = /^\[(\d{1,2}\.\d{1,2}\.\d{4})|^(\d{1,2}\.\d{1,2}\.\d{4}),\s*\d{1,2}:\d{2}\s*-/;
   let lastDate = '';
   for (let i = lines.length - 1; i >= 0; i--) {
-    let m = msgReIOS2.exec(lines[i]);
-    if (m) { lastDate = `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`; break; }
-    m = msgReAnd2.exec(lines[i]);
-    if (m) { lastDate = `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`; break; }
+    const m = msgRe.exec(lines[i]);
+    if (m) { lastDate = m[1]; break; }
   }
   const meta = { lastDate, messageCount: lines.length, savedAt: new Date().toISOString() };
   await writeFile('panther-meta.json', JSON.stringify(meta), 'application/json');
@@ -2635,52 +2519,21 @@ async function saveChatToDrive(text) {
   // מזג ל-panther-database.json
   try {
     const parsed = parseWhatsApp(text, null, null);
-    // בנה index של שורות לכל הודעה
-    const allLines = text.split('\n');
-    const iosRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\]/;
-    const andRe = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]/;
-    const msgLineIndices = [];
-    allLines.forEach((line, i) => { if (iosRe.test(line) || andRe.test(line)) msgLineIndices.push(i); });
-
-    const newCalls = parsed.calls.map(c => {
-      // מצא את שורת הקריאה בטקסט
-      let contextLines = [];
-      // חפש את שורת הקריאה — נסה כמה וריאציות של תאריך/שעה
-      const dateVariants = [
-        c.date,                                    // 10.02.2026
-        c.date.replace(/^0/,'').replace(/\.0/,'.'), // 10.2.2026
-        c.date.replace(/\.(0)(\d)\./,'.$2.')        // 10.2.2026 via regex
-      ];
-      const timeVariants = [c.time, c.time.replace(/^0/,'')];
-      const lineIdx = allLines.findIndex((line) => {
-        if (!iosRe.test(line) && !andRe.test(line)) return false;
-        return dateVariants.some(d => line.includes(d)) &&
-               timeVariants.some(t => line.includes(t));
-      });
-      if (lineIdx >= 0) {
-        contextLines = allLines.slice(lineIdx, lineIdx + 35);
-      }
-      return {
-        id: makeCallId(c.date, c.time, c.region, c.location),
-        date: c.date,
-        time: c.time,
-        dayName: c.dayName,
-        region: c.region,
-        location: c.location,
-        vehicle: c.vehicle,
-        callType: c.callType,
-        status: c.origStatus || c.status || 'open',
-        closingNote: c.closingNote || '',
-        rawSender: c.handlerClean || '',
-        rawContext: contextLines.join('\n')
-      };
-    });
+    const newCalls = parsed.calls.map(c => ({
+      id: makeCallId(c.date, c.time, c.region, c.location),
+      date: c.date,
+      time: c.time,
+      dayName: c.dayName,
+      region: c.region,
+      location: c.location,
+      vehicle: c.vehicle,
+      callType: c.callType,
+      rawSender: c.handlerClean || '',
+      rawContext: (c.rawContext || []).slice(0, 20).join('\n')
+    }));
     const db = await loadDatabase() || { calls: [], nameDict: {}, meta: {} };
-    console.log('[saveChatToDrive] newCalls:', newCalls.length, 'isSourceOfTruth:', isSourceOfTruth());
-    console.log('[saveChatToDrive] sample rawContext:', newCalls[0]?.rawContext?.substring(0,80));
     const { db: mergedDb, added } = await mergeCallsIntoDB(newCalls, db, isSourceOfTruth());
     await saveDatabase(mergedDb);
-    pantherDB = mergedDb; // עדכן זיכרון
     console.log(`DB: נוספו ${added} קריאות חדשות, סה"כ ${mergedDb.calls.length}`);
   } catch(e) { console.error('DB merge error:', e); }
 }
