@@ -152,7 +152,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .btn-chat-view:hover { background:rgba(44,74,110,0.14); color:var(--blue-dark); }
 
 /* VOLUNTEERS */
-.vol-row { padding:12px 20px; display:flex; align-items:flex-start; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
+.vol-row { padding:12px 20px; display:flex; align-items:center; gap:10px; border-bottom:1.5px solid var(--divider); transition:background 0.12s; cursor:pointer; }
 .vol-row:last-child { border-bottom:none; }
 .vol-row:hover { background:#e8f0fa; }
 .vol-rank { width:26px; font-size:15px; font-weight:800; color:var(--text-muted); text-align:center; flex-shrink:0; }
@@ -410,9 +410,9 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 }
 
 /* CHAT VIEWER MODAL */
-.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; }
+.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; }
 .chat-modal .modal-header { flex-shrink:0; }
-.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; }
+.chat-body { flex:1; overflow-y:auto; padding:16px; background:#e5ddd5; min-height:0; }
 .chat-bubble-wrap { display:flex; margin-bottom:10px; }
 .chat-bubble { max-width:80%; padding:8px 12px; border-radius:10px; font-size:13px; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .chat-bubble.incoming { background:white; border-radius:0 10px 10px 10px; }
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v129</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v130</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,12 +593,12 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v129</div>
+        <div class="header-version">v130</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
     <div id="dbUpdateBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#1a73e8,#0d47a1);color:white;text-align:center;padding:10px 16px;font-family:Rubik,sans-serif;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);" onclick="reloadDB()">
-      🔄 התקבלו נתונים חדשים למאגר — לחץ כאן לטעינה מחדש
+      🔄 <span id="dbUpdateBannerText">התקבלו נתונים חדשים למאגר</span> — לחץ כאן לטעינה מחדש
     </div>
     <div class="header-row2">
       <button class="btn-export" id="btnExport" onclick="exportCSV()" title="ייצוא לאקסל">📥 ייצא לאקסל / CSV</button>
@@ -1391,17 +1391,22 @@ function renderChatFromContext(c) {
 
     const cleanBody = formatBody(msg.body);
     const senderClean = cleanName(msg.sender);
+    const DISPATCH_RE = /מוקד|שי כלאף|נתי\b|נתי.*פנתרים|נתי.*בר|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
+    const isDispatchMsg = DISPATCH_RE.test(msg.sender);
 
-    // בועת קריאה — ירוק כהה + גבול שמאל
+    // בועת קריאה — כחול. דיספאצ'ר — כחול בהיר. שאר — לבן
     const bubbleStyle = isCallMsg
       ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
-      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+      : isDispatchMsg
+        ? 'background:#e8f0fe;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #4285f4;'
+        : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+    const align = (isCallMsg || isDispatchMsg) ? 'align-items:flex-start;' : 'align-items:flex-end;';
 
-    html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + (isCallMsg?'align-items:flex-start;'  :'align-items:flex-end;') + '">'
+    html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + align + '">'
       + '<div style="max-width:82%;padding:8px 12px;' + bubbleStyle + 'box-shadow:0 1px 3px rgba(0,0,0,0.1);">'
       + (isCallMsg
           ? '<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
-          : '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">' + senderClean + '</div>')
+          : '<div style="font-size:11px;font-weight:700;color:' + (isDispatchMsg ? '#4285f4' : 'var(--orange)') + ';margin-bottom:3px;">' + senderClean + '</div>')
       + '<div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + cleanBody + '</div>'
       + '<div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">' + msg.timeStr + '</div>'
       + '</div></div>';
@@ -1501,15 +1506,21 @@ function openChatViewer(callIndex) {
 
     const cleanBody = formatBody(msg.body);
     const senderClean = cleanName(msg.sender);
+    const DISPATCH_RE = /מוקד|שי כלאף|נתי\b|נתי.*פנתרים|נתי.*בר|ידידים דוד|מבצעי|גלעד.*ידידים|אחמ"ש|אחמש.*צפון|דודו.*מוקד/i;
+    const isDispatchMsg = DISPATCH_RE.test(msg.sender);
 
     const bubbleStyle = isCallMsg
       ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
-      : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+      : isDispatchMsg
+        ? 'background:#e8f0fe;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #4285f4;'
+        : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
+    const align = (isCallMsg || isDispatchMsg) ? 'align-items:flex-start;' : 'align-items:flex-end;';
+    const senderColor = isCallMsg ? '#1a73e8' : isDispatchMsg ? '#4285f4' : 'var(--orange)';
+    const senderPrefix = isCallMsg ? '📞 קריאה – ' : '';
 
-    html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
+    html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${align}">
       <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
-        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
+        <div style="font-size:11px;font-weight:700;color:${senderColor};margin-bottom:3px;">${senderPrefix}${senderClean}</div>
         <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
         <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
       </div>
@@ -1648,7 +1659,7 @@ function renderDashboard(s,e) {
     const medalClass = medal==='gold'?'medal-gold':medal==='silver'?'medal-silver':medal==='bronze'?'medal-bronze':'medal-plain';
     const medalEmoji = medal==='gold' ? '🥇' : medal==='silver' ? '🥈' : medal==='bronze' ? '🥉' : '';
     const rankDisplay = medalEmoji
-      ? `<span style="font-size:26px;line-height:1;">${medalEmoji}</span>`
+      ? `<span style="font-size:34px;line-height:1;flex-shrink:0;display:flex;align-items:center;">${medalEmoji}</span>`
       : `<div class="vol-rank">${rankNum}</div>`;
     return `<div class="vol-row" onclick="showVolCalls('${name.replace(/'/g,"\\'")}',${JSON.stringify(data.callIndices)})">
       ${rankDisplay}
@@ -2993,11 +3004,22 @@ async function getFileEtag(filename) {
   if (!driveAccessToken) return null;
   try {
     const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and trashed=false&fields=files(id,modifiedTime)`,
+      `https://www.googleapis.com/drive/v3/files?q=name='${filename}' and trashed=false&fields=files(id,md5Checksum,modifiedTime,lastModifyingUser)`,
       { headers: { Authorization: 'Bearer ' + driveAccessToken } }
     );
     const data = await res.json();
-    if (data.files && data.files.length > 0) return data.files[0].modifiedTime;
+    if (data.files && data.files.length > 0) {
+      const f = data.files[0];
+      // שמור uploader לשימוש בבאנר
+      const email = f.lastModifyingUser?.emailAddress || '';
+      let uploaderName = '';
+      if (email === 'motiyair@gmail.com') uploaderName = 'מוטי';
+      else if (email === 'shayhalaf@gmail.com') uploaderName = 'שי';
+      else if (email.includes('nati') || email.includes('natabar')) uploaderName = 'נתי';
+      else if (f.lastModifyingUser?.displayName) uploaderName = f.lastModifyingUser.displayName;
+      window._lastDbUploader = uploaderName;
+      return f.md5Checksum || f.modifiedTime;
+    }
     return null;
   } catch(e) { return null; }
 }
@@ -3112,7 +3134,14 @@ function showDbUpdateBanner() {
   if (!dbPendingUpdate) return;
   if (!isMainScreenActive()) return; // לא מציג בזמן עריכה
   const banner = document.getElementById('dbUpdateBanner');
-  if (banner) banner.style.display = 'block';
+  if (banner) {
+    const uploader = window._lastDbUploader;
+    const textEl = document.getElementById('dbUpdateBannerText');
+    if (textEl) textEl.textContent = uploader
+      ? `נתונים חדשים התקבלו מ${uploader}`
+      : 'התקבלו נתונים חדשים למאגר';
+    banner.style.display = 'block';
+  }
 }
 
 function hideDbUpdateBanner() {
