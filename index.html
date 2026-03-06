@@ -378,8 +378,8 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .modal-overlay { padding:16px; align-items:center; }
   .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
   .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .chat-modal { max-height:88vh; border-radius:16px; }
-  .chat-body { -webkit-overflow-scrolling:touch; }
+  .chat-modal { max-height:88vh; border-radius:16px; display:flex; flex-direction:column; }
+  .chat-body { overflow-y:auto; -webkit-overflow-scrolling:touch; flex:1; min-height:0; }
 
   /* Regions */
   .regions-grid { grid-template-columns:repeat(2,1fr); padding:10px; gap:8px; }
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v128</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v129</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v128</div>
+        <div class="header-version">v129</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1369,10 +1369,10 @@ function renderChatFromContext(c) {
     const isCallMsg = idx === callMsgIdx;
 
     // זיהוי הודעות מערכת — הסרה/הצטרפות/עזיבה
+    // הודעות מערכת בווטסאפ: sender ריק, מספר טלפון בלבד, או sender מכיל מילות מערכת
     const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
-    const isSystemMsg = !andRe.exec(msg.sender + ': ') && (systemRe.test(msg.body) || systemRe.test(msg.sender));
-    // גם מספרי טלפון בלבד הם מערכת
     const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
+    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender);
 
     if (isSystemMsg || isPhoneOnly) {
       const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
@@ -1394,13 +1394,13 @@ function renderChatFromContext(c) {
 
     // בועת קריאה — ירוק כהה + גבול שמאל
     const bubbleStyle = isCallMsg
-      ? 'background:#e8f5e9;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #075e54;'
+      ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
 
     html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + (isCallMsg?'align-items:flex-start;'  :'align-items:flex-end;') + '">'
       + '<div style="max-width:82%;padding:8px 12px;' + bubbleStyle + 'box-shadow:0 1px 3px rgba(0,0,0,0.1);">'
       + (isCallMsg
-          ? '<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
+          ? '<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
           : '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">' + senderClean + '</div>')
       + '<div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + cleanBody + '</div>'
       + '<div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">' + msg.timeStr + '</div>'
@@ -1482,8 +1482,8 @@ function openChatViewer(callIndex) {
 
     // זיהוי הודעות מערכת
     const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
-    const isSystemMsg = systemRe.test(msg.body) || systemRe.test(msg.sender);
     const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
+    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender);
 
     if (isSystemMsg || isPhoneOnly) {
       const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
@@ -1503,13 +1503,13 @@ function openChatViewer(callIndex) {
     const senderClean = cleanName(msg.sender);
 
     const bubbleStyle = isCallMsg
-      ? 'background:#e8f5e9;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #075e54;'
+      ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
 
     html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${isCallMsg?'align-items:flex-start;':'align-items:flex-end;'}">
       <div style="max-width:80%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
         ${!isCallMsg?`<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">${senderClean}</div>`:''}
-        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#075e54;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
+        ${isCallMsg?`<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ${senderClean}</div>`:''}
         <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
         <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${msg.timeStr}</div>
       </div>
@@ -1581,10 +1581,26 @@ function renderDashboard(s,e) {
     if (c.status === 'sab' && c.handlerClean) {
       const names = c.handlerClean.split('|').map(n => n.trim()).filter(n => n.length >= 3);
       names.forEach(name => {
-        if (!volunteers[name]) volunteers[name] = {count:0, region:c.region, callIndices:[]};
-        if (!volunteers[name].callIndices.includes(c.index)) {
-          volunteers[name].count++;
-          volunteers[name].callIndices.push(c.index);
+        // נרמול שמות: מצא מפתח קיים שחולק 2 מילים ראשונות זהות
+        const nameParts = name.split(/\s+/);
+        const nameKey2 = nameParts.slice(0,2).join(' '); // שם + משפחה
+        const existingKey = Object.keys(volunteers).find(k => {
+          const kParts = k.split(/\s+/);
+          return kParts.slice(0,2).join(' ') === nameKey2;
+        });
+        const key = existingKey || name;
+        // אם השם החדש ארוך יותר — הוא המועמד הטוב יותר; השתמש בארוך יותר כמפתח
+        // (שי כמקור אמת — השם המעודכן ביותר יהיה הארוך/המדויק ביותר)
+        const canonicalKey = existingKey && existingKey.length >= name.length ? existingKey : name;
+        if (existingKey && existingKey !== canonicalKey) {
+          // שנה מפתח לשם הקנוני (ארוך יותר)
+          volunteers[canonicalKey] = volunteers[existingKey];
+          delete volunteers[existingKey];
+        }
+        if (!volunteers[canonicalKey]) volunteers[canonicalKey] = {count:0, region:c.region, callIndices:[]};
+        if (!volunteers[canonicalKey].callIndices.includes(c.index)) {
+          volunteers[canonicalKey].count++;
+          volunteers[canonicalKey].callIndices.push(c.index);
         }
       });
     }
@@ -3129,9 +3145,12 @@ function startLiveSync() {
     checkAndSyncOverrides();
     checkDbUpdate();
   }, 30000);
-  // קבע etag ראשוני
+  // קבע etag ראשוני — עם עיכוב קצר כדי לאפשר לכתיבות מכשירים אחרים להתייצב
   getFileEtag('panther-overrides.json').then(etag => { lastOverridesEtag = etag; });
-  getFileEtag('panther-database.json').then(etag => { lastDbEtag = etag; });
+  // DB: קבע etag רק אחרי 5 שניות — מונע באנר מיותר כשמכשיר אחר רק נפתח
+  setTimeout(() => {
+    getFileEtag('panther-database.json').then(etag => { lastDbEtag = etag; });
+  }, 5000);
 }
 
 </script>
