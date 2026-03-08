@@ -378,7 +378,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
   .modal-overlay { padding:16px; align-items:center; }
   .modal { border-radius:16px; max-width:100%; max-height:88vh; overflow:hidden; display:flex; flex-direction:column; }
   .modal-body { overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .chat-modal { max-height:88vh; border-radius:16px; }
+  .chat-modal { max-height:88vh; border-radius:16px; overflow-y:auto !important; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; }
   .chat-body { -webkit-overflow-scrolling:touch; }
 
   /* Regions */
@@ -435,7 +435,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
     <div>
       <h1>יחידת פנתר – ידידים</h1>
       <p>לוח בקרה שבועי אוטומטי</p>
-      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v139</p>
+      <p style="font-size:11px;color:rgba(255,255,255,0.3);margin:2px 0 0 0;letter-spacing:0.3px;">v140</p>
     </div>
   </div>
   <div class="upload-box">
@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v139</div>
+        <div class="header-version">v140</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -1374,6 +1374,9 @@ function renderChatFromContext(c) {
     return Math.abs(mh * 60 + mm - callMins) <= 2;
   }) ?? 0;
 
+  // קריאה מזוהה לפי פורמט ה-body בלבד
+  const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
+
   let html = '';
   let lastDate = '';
   msgs.forEach((msg, idx) => {
@@ -1384,12 +1387,14 @@ function renderChatFromContext(c) {
     }
 
     const isCallMsg = idx === callMsgIdx;
+    const isBlueMsg = CALL_MSG_RE.test(msg.body.trim());
 
     // זיהוי הודעות מערכת — הסרה/הצטרפות/עזיבה
     // הודעות מערכת בווטסאפ: sender ריק, מספר טלפון בלבד, או sender מכיל מילות מערכת
     const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
+    const systemBodyRe = /^[\u200f\u200e~\s]*[^\s:]{2,}[\s\u200f\u200e]*(יצא\/ה|הצטרף\/ה|עזב\/ה|יצא$|יצאה$|הצטרף$|הצטרפה$|עזב$|עזבה$)/i;
     const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
-    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender);
+    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender) || systemBodyRe.test(msg.body);
 
     if (isSystemMsg || isPhoneOnly) {
       const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
@@ -1409,17 +1414,17 @@ function renderChatFromContext(c) {
     const cleanBody = formatBody(msg.body);
     const senderClean = cleanName(msg.sender);
 
-    // רק בועת קריאה — כחול. שאר — לבן
-    const bubbleStyle = isCallMsg
+    // בועת קריאה/מוקד — כחול. שאר — לבן
+    const bubbleStyle = isBlueMsg
       ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-    const align = isCallMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
+    const align = isBlueMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
 
     html += '<div id="ctxmsg-' + idx + '" style="display:flex;flex-direction:column;margin-bottom:8px;' + align + '">'
       + '<div style="max-width:82%;padding:8px 12px;' + bubbleStyle + 'box-shadow:0 1px 3px rgba(0,0,0,0.1);">'
       + (isCallMsg
           ? '<div style="font-size:11px;font-weight:700;color:#1a73e8;margin-bottom:3px;">📞 קריאה – ' + senderClean + '</div>'
-          : '<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:3px;">' + senderClean + '</div>')
+          : '<div style="font-size:11px;font-weight:700;color:' + (isBlueMsg ? '#1a73e8' : 'var(--orange)') + ';margin-bottom:3px;">' + senderClean + '</div>')
       + '<div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + cleanBody + '</div>'
       + '<div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">' + msg.timeStr + '</div>'
       + '</div></div>';
@@ -1470,6 +1475,8 @@ function openChatViewer(callIndex) {
   // Find the call message — חיפוש גמיש: תאריך מדויק + שעה ±2 דקות
   const [callH, callM] = c.time.split(':').map(Number);
   const callMins = callH * 60 + callM;
+  const callTotalMins = callH * 60 + callM;
+  const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
   const callMsgIdx = allMsgs.findIndex(m => {
     if (m.dateStr !== c.date) return false;
     const [mh, mm] = m.timeStr.split(':').map(Number);
@@ -1499,11 +1506,13 @@ function openChatViewer(callIndex) {
     }
 
     const isCallMsg = idx === callMsgIdx;
+    const isBlueMsg = CALL_MSG_RE.test(msg.body.trim());
 
     // זיהוי הודעות מערכת
     const systemRe = /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
+    const systemBodyRe = /^[\u200f\u200e~\s]*[^\s:]{2,}[\s\u200f\u200e]*(יצא\/ה|הצטרף\/ה|עזב\/ה|יצא$|יצאה$|הצטרף$|הצטרפה$|עזב$|עזבה$)/i;
     const isPhoneOnly = /^[\u202a\u202c+0-9\s-]{7,}$/.test(msg.sender.trim());
-    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender);
+    const isSystemMsg = !msg.sender || isPhoneOnly || systemRe.test(msg.sender) || systemBodyRe.test(msg.body);
 
     if (isSystemMsg || isPhoneOnly) {
       const sysText = isPhoneOnly ? msg.body : (msg.sender + ': ' + msg.body);
@@ -1521,11 +1530,11 @@ function openChatViewer(callIndex) {
 
     const cleanBody = formatBody(msg.body);
     const senderClean = cleanName(msg.sender);
-    const bubbleStyle = isCallMsg
+    const bubbleStyle = isBlueMsg
       ? 'background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;'
       : 'background:white;border-radius:0 10px 10px 10px;margin-right:20px;margin-left:auto;';
-    const align = isCallMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
-    const senderColor = isCallMsg ? '#1a73e8' : 'var(--orange)';
+    const align = isBlueMsg ? 'align-items:flex-start;' : 'align-items:flex-end;';
+    const senderColor = isBlueMsg ? '#1a73e8' : 'var(--orange)';
     const senderPrefix = isCallMsg ? '📞 קריאה – ' : '';
 
     html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${align}">
