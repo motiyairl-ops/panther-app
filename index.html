@@ -593,7 +593,7 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
       <div>
         <div class="header-title">יחידת פנתר – ידידים</div>
         <div class="header-sub">לוח בקרה שבועי | מרחב צפון וגולן</div>
-        <div class="header-version">v144</div>
+        <div class="header-version">v145</div>
       </div>
     </div>
     <div id="syncBanner" style="display:none;background:rgba(39,174,96,0.12);padding:2px 0;text-align:center;font-size:11px;color:rgba(39,174,96,1);font-family:Rubik,sans-serif;font-weight:600;letter-spacing:0.2px;"></div>
@@ -2746,8 +2746,8 @@ function loadParsedFromDB(db, startDate, endDate) {
       : resolvedHandler;
 
     const origStatus = dbCall.status || 'open';
-    let status = manualStatuses[callIndex] !== undefined ? manualStatuses[callIndex] :
-    const closingNote = manualNotes[callIndex] !== undefined ? manualNotes[callIndex] :
+    let status = manualStatuses[callIndex] !== undefined ? manualStatuses[callIndex] : origStatus;
+    const closingNote = manualNotes[callIndex] !== undefined ? manualNotes[callIndex] : (dbCall.closingNote || '');
 
     const call = {
       index: callIndex,
