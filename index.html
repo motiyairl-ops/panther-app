@@ -2735,18 +2735,19 @@ function loadParsedFromDB(db, startDate, endDate) {
     }
     const callIndex = calls.length; // index = מיקום במערך המסונן
     // פתור שם כונן לפי מילון
-    const rawHandler = dbCall.rawSender || '';
-    const resolvedHandler = resolveHandler(rawHandler, nameDict);
+    const resolvedHandler = dbCall.handlerClean
+     ? dbCall.handlerClean
+     : resolveHandler(dbCall.rawSender || '', nameDict);
 
     // החל overrides
-    const assignment = manualAssignments[i];
-    const hClean = assignment
+    const assignment = manualAssignments[callIndex];
+    const hClean = assignment !== undefined
       ? assignment.replace(/\|/g, ', ')
       : resolvedHandler;
 
     const origStatus = dbCall.status || 'open';
-    let status = manualStatuses[i] !== undefined ? manualStatuses[i] : origStatus;
-    const closingNote = manualNotes[i] !== undefined ? manualNotes[i] : (dbCall.closingNote || '');
+    let status = manualStatuses[callIndex] !== undefined ? manualStatuses[callIndex] :
+    const closingNote = manualNotes[callIndex] !== undefined ? manualNotes[callIndex] :
 
     const call = {
       index: callIndex,
@@ -2868,7 +2869,8 @@ async function saveChatToDrive(text, fileName) {
         callType: c.callType,
         status: c.origStatus || c.status || 'open',
         closingNote: c.closingNote || '',
-        rawSender: c.handlerClean || '',
+        handlerClean: c.handlerClean || '',
+        rawSender: c.rawSender || c.handlerClean || '',
         rawContext: contextLines.join('\n')
       };
     });
