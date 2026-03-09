@@ -278,31 +278,27 @@ function loadParsedFromDB(db, startDate, endDate) {
 }
 
 async function loadFromDrive() {
-  const startDate = document.getElementById('weekStart')?.value || null;
-  const endDate = document.getElementById('weekEnd')?.value || null;
-
-  // תמיד נסה לטעון גם את קובץ הצ'אט המלא כדי ש-"צפה בשיחה" יעבוד עם כל ההיסטוריה
+  // תמיד נסה לטעון גם את קובץ הצ'אט המלא, כדי ש-"צפה בשיחה" יעבוד עם כל ההיסטוריה
   let chatText = null;
   try {
     chatText = await readFile('panther-chat.txt');
     if (chatText) rawText = chatText;
-  } catch (e) {
-    console.warn('Could not load panther-chat.txt from Drive:', e);
+  } catch (err) {
+    console.warn('Failed loading panther-chat.txt', err);
   }
 
-  // אם יש DB — טען ממנו את הדשבורד, אבל rawText כבר זמין לצפייה בשיחה מלאה
+  // נסה לטעון מ-DB קודם
   if (pantherDB && pantherDB.calls && pantherDB.calls.length > 0) {
     document.getElementById('analyzeBtn').disabled = false;
-    document.getElementById('dzSub').textContent = chatText
-      ? '✅ נטען מ-Drive בהצלחה'
-      : '✅ נטען מ-Drive (ללא קובץ צ׳אט מלא)';
-    loadParsedFromDB(pantherDB, startDate, endDate);
+    document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
+    loadParsedFromDB(pantherDB, s, e);
     startLiveSync();
     return;
   }
 
-  // fallback — אם אין DB, טען TXT ונתח
+  // fallback — טען TXT ונתח
   if (!chatText) { alert('לא נמצא קובץ צ׳אט ב-Drive'); return; }
+  rawText = chatText;
   document.getElementById('analyzeBtn').disabled = false;
   document.getElementById('dzSub').textContent = '✅ נטען מ-Drive בהצלחה';
   document.getElementById('analyzeBtn').click();
