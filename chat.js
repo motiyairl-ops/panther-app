@@ -22,16 +22,22 @@ function renderChatFromContext(c) {
 
   const lines = (c.rawContext || '').split('\n');
   const iosRe = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
-  const andRe = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+  const andReSlash = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+  const andReDots = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
 
   const msgs = [];
   let cur = null;
   for (const line of lines) {
-    let m = iosRe.exec(line) || andRe.exec(line);
+    let m = iosRe.exec(line);
+    let isAndroid = false;
+    if (!m) { m = andReSlash.exec(line); isAndroid = !!m; }
+    if (!m) { m = andReDots.exec(line); isAndroid = !!m; }
     if (m) {
       if (cur) msgs.push(cur);
+      let y = parseInt(m[3], 10);
+      if (isAndroid && y < 100) y += 2000;
       cur = {
-        dateStr: `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`,
+        dateStr: `${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${String(y)}`,
         timeStr: `${m[4].padStart(2,'0')}:${m[5]}`,
         sender: m[6].replace(/^~ /,'').trim(),
         body: m[7].trim()
@@ -128,15 +134,21 @@ function openChatViewer(callIndex) {
   if (!rawText) { alert('לא נמצא קובץ שיחה'); return; }
   const lines = rawText.split('\n');
   const msgReIOS = /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):\d{2}\] ([^:]+): ([\s\S]*)/;
-  const msgReAnd = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+  const msgReAndSlash = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
+  const msgReAndDots = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^:]+): ([\s\S]*)/;
   const allMsgs = [];
   let cur = null;
   for (const line of lines) {
-    const m = msgReIOS.exec(line) || msgReAnd.exec(line);
+    let m = msgReIOS.exec(line);
+    let isAndroid = false;
+    if (!m) { m = msgReAndSlash.exec(line); isAndroid = !!m; }
+    if (!m) { m = msgReAndDots.exec(line); isAndroid = !!m; }
     if (m) {
       if (cur) allMsgs.push(cur);
+      let y = parseInt(m[3], 10);
+      if (isAndroid && y < 100) y += 2000;
       cur = {
-        dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${m[3]}`,
+        dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${String(y)}`,
         timeStr:`${m[4].padStart(2,'0')}:${m[5]}`,
         sender:m[6].replace(/^~ /,'').trim(),
         body:m[7].trim()

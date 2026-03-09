@@ -17,7 +17,8 @@ function parseWhatsApp(text, startDate, endDate) {
   const msgReAndroidDots = /^(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2})\s*[-–]\s*([^\u200f\u202a\u202c:‏‪‬][^:]*|[\u200f\u202a\u202c‏‪‬][^:]+): ([\s\S]*)/;
 
   let cur = null;
-  for (const line of lines) {
+  for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+    const line = lines[lineIdx];
     let m = msgReIOS.exec(line);
     let isAndroid = false;
     if (!m) { m = msgReAndroid.exec(line); isAndroid = !!m; }
@@ -26,7 +27,7 @@ function parseWhatsApp(text, startDate, endDate) {
       if (cur) messages.push(cur);
       let y = parseInt(m[3]); if (isAndroid && y < 100) y += 2000;
       const date = new Date(y, parseInt(m[2])-1, parseInt(m[1]));
-      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').replace(/[\u200f\u200e\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\u206a-\u206f\uFEFF‏‪‬]/g,'').trim(), body:m[7].trim(), _lineIdx: lines.indexOf(line) };
+      cur = { date, dateStr:`${m[1].padStart(2,'0')}.${m[2].padStart(2,'0')}.${y}`, timeStr:`${m[4].padStart(2,'0')}:${m[5]}`, sender:m[6].replace(/^~ /,'').replace(/[\u200f\u200e\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\u206a-\u206f\uFEFF‏‪‬]/g,'').trim(), body:m[7].trim(), _lineIdx: lineIdx };
     } else if (cur) cur.body += '\n' + line.trim();
   }
   if (cur) messages.push(cur);
@@ -147,8 +148,8 @@ function parseWhatsApp(text, startDate, endDate) {
     }
     if (!location) continue;
 
-    // Find in global messages for cross-boundary look-ahead
-    const globalIdx = messages.findIndex(m=>m.dateStr===msg.dateStr&&m.timeStr===msg.timeStr&&m.sender===msg.sender);
+    // Find in global messages for cross-boundary look-ahead — use _lineIdx for exact match
+    const globalIdx = messages.findIndex(m=>m._lineIdx===msg._lineIdx);
 
     let handler='', status='open', closingNote='', intentCandidate='', intentSender='', handlerIsSingle=false;
     // חלון זמן: עד 4 שעות משעת הקריאה
@@ -220,8 +221,12 @@ function parseWhatsApp(text, startDate, endDate) {
       if (next.dateStr !== msg.dateStr && diffMins > 240) break;
       if (next.dateStr === msg.dateStr && diffMins > 240) break;
 
-      // Stop if new call begins (with grace period)
-      if (j > globalIdx+3 && CALL_RE.exec(nb)) break;
+      // Stop if new call begins — but if we have an intentCandidate, save them first
+      if (CALL_RE.exec(nb)) {
+        // If the intentCandidate also wrote something after this new call → they belong to old call
+        // Otherwise stop here
+        if (j > globalIdx + 1) break;
+      }
 
       // Track intent candidate (first non-dispatcher who expressed willingness)
       if (!intentCandidate && INTENT_RE.exec(nb) && next.sender!==msg.sender && !DISPATCHERS.exec(next.sender)) {
