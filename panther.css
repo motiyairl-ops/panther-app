@@ -411,3 +411,31 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 .call-row { cursor:pointer; }
 .call-row-hint { font-size:10px; color:var(--text-muted); opacity:0; transition:opacity 0.15s; }
 .call-row:hover .call-row-hint { opacity:1; }
+
+
+/* CHAT VIEWER — stronger mobile scroll fix */
+@media (max-width: 640px) {
+  #chatOverlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  #chatOverlay .chat-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 92dvh !important;
+    max-height: 92dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    overflow: hidden !important;
+  }
+
+  #chatOverlay .chat-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    touch-action: pan-y !important;
+    padding-bottom: 40px !important;
+  }
+}

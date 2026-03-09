@@ -1,4 +1,24 @@
 // ===================== CHAT VIEWER =====================
+
+function enableChatBodyMobileScroll() {
+  const chatBodyEl = document.getElementById('chatBody');
+  if (!chatBodyEl) return;
+
+  chatBodyEl.style.overflowY = 'auto';
+  chatBodyEl.style.webkitOverflowScrolling = 'touch';
+  chatBodyEl.style.overscrollBehavior = 'contain';
+  chatBodyEl.style.touchAction = 'pan-y';
+
+  if (!chatBodyEl.dataset.touchBound) {
+    ['touchstart', 'touchmove', 'wheel'].forEach(evt => {
+      chatBodyEl.addEventListener(evt, (e) => {
+        e.stopPropagation();
+      }, { passive: true });
+    });
+    chatBodyEl.dataset.touchBound = '1';
+  }
+}
+
 // Long press for mobile chat open
 let longPressTimer = null;
 function handleCallTouchStart(event, callIndex) {
@@ -112,6 +132,7 @@ function renderChatFromContext(c) {
   });
 
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
+  enableChatBodyMobileScroll();
   document.getElementById('chatOverlay').classList.add('open');
 
   // Scroll לקריאה — גלילה בתוך chatBody עצמו
@@ -229,6 +250,7 @@ function openChatViewer(callIndex) {
   });
 
   document.getElementById('chatBody').innerHTML = html;
+  enableChatBodyMobileScroll();
   document.getElementById('chatOverlay').classList.add('open');
 
   // Scroll to call message — גלילה בתוך chatBody עצמו
