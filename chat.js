@@ -114,11 +114,13 @@ function renderChatFromContext(c) {
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
 
-  // Scroll לקריאה עם הדגשה כתומה
+  // Scroll לקריאה — גלילה בתוך chatBody עצמו (יציב יותר במובייל)
   setTimeout(() => {
     const target = document.getElementById(`ctxmsg-${callMsgIdx}`);
-    if (target) {
-      target.scrollIntoView({ block: 'center' });
+    const chatBodyEl = document.getElementById('chatBody');
+    if (target && chatBodyEl) {
+      const targetTop = target.offsetTop - Math.max(24, (chatBodyEl.clientHeight * 0.35));
+      chatBodyEl.scrollTop = Math.max(0, targetTop);
       target.style.outline = '2px solid var(--orange)';
       target.style.borderRadius = '6px';
       setTimeout(() => { target.style.outline = ''; }, 2500);
@@ -162,7 +164,7 @@ function openChatViewer(callIndex) {
   const callMins = callH * 60 + callM;
   const callTotalMins = callH * 60 + callM;
   const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
-  const callMsgIdx = allMsgs.findIndex(m => {
+  let callMsgIdx = allMsgs.findIndex(m => {
     if (m.dateStr !== c.date) return false;
     const [mh, mm] = m.timeStr.split(':').map(Number);
     return Math.abs(mh * 60 + mm - callMins) <= 2;
@@ -229,11 +231,13 @@ function openChatViewer(callIndex) {
   document.getElementById('chatBody').innerHTML = html;
   document.getElementById('chatOverlay').classList.add('open');
 
-  // Scroll to call message
+  // Scroll to call message — גלילה בתוך chatBody עצמו (יציב יותר במובייל)
   setTimeout(() => {
     const target = document.getElementById(`chatmsg-${callMsgIdx}`);
-    if (target) {
-      target.scrollIntoView({ block: 'center' });
+    const chatBodyEl = document.getElementById('chatBody');
+    if (target && chatBodyEl) {
+      const targetTop = target.offsetTop - Math.max(24, (chatBodyEl.clientHeight * 0.35));
+      chatBodyEl.scrollTop = Math.max(0, targetTop);
       target.style.outline = '2px solid var(--orange)';
       target.style.borderRadius = '6px';
       setTimeout(() => { target.style.outline = ''; }, 2500);
