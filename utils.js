@@ -201,12 +201,6 @@ async function analyze() {
     document.getElementById('uploadScreen').style.display='none';
     document.getElementById('dashboard').style.display='block';
     renderVolDb();
-
-    // טען גם את הצ'אט המלא כדי שתהיה היסטוריה ב"צפה בשיחה"
-    if (!rawText && typeof readFile === 'function') {
-      readFile('panther-chat.txt').then(t=>{ if(t) rawText=t; }).catch(()=>{});
-    }
-
     startLiveSync();
     return;
   }
@@ -333,7 +327,7 @@ function renderDashboard(s,e) {
 
   document.getElementById('statsRow').innerHTML=`
     <div class="stat-card" style="animation-delay:0s"><div class="stat-num">${calls.length}</div><div class="stat-label">סה"כ קריאות</div><div class="stat-emoji">📞</div></div>
-    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${sab.length}</div><div class="stat-label">חולצו בהצלחה (סא"ב)</div><div class="stat-emoji">✅</div></div>
+    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${sab.length}</div><div class="stat-label">חילוצים מוצלחים (סא"ב)</div><div class="stat-emoji">✅</div></div>
     <div class="stat-card purple" style="animation-delay:0.14s"><div class="stat-num">${Object.keys(volunteers).length}</div><div class="stat-label">כוננים פעילים</div><div class="stat-emoji">👥</div></div>`;
 
   document.getElementById('callsBadge').textContent=`${calls.length} קריאות`;
