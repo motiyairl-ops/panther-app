@@ -304,6 +304,23 @@
 </div>
 
 
+
+<script>
+(function () {
+  function applyAppVersion() {
+    var v = window.APP_VERSION || '';
+    var upload = document.getElementById('uploadVersionLabel');
+    var header = document.getElementById('appVersionLabel');
+    if (upload) upload.textContent = v;
+    if (header) header.textContent = v;
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyAppVersion);
+  } else {
+    applyAppVersion();
+  }
+})();
+</script>
 <script src="parser.js"></script>
 <script src="chat.js"></script>
 <script src="drive.js"></script>
