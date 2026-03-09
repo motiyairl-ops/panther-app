@@ -314,6 +314,7 @@ function renderDashboard(s,e) {
   });
 
   const sab=calls.filter(c=>c.status==='sab');
+  const successfulRescueCount = Object.values(volunteers).reduce((sum, v) => sum + (v.count || 0), 0);
 
   // Dynamic section title based on date range
   const daysDiff = (s && e) ? Math.round((new Date(e)-new Date(s))/(1000*60*60*24))+1 : 0;
@@ -327,7 +328,7 @@ function renderDashboard(s,e) {
 
   document.getElementById('statsRow').innerHTML=`
     <div class="stat-card" style="animation-delay:0s"><div class="stat-num">${calls.length}</div><div class="stat-label">סה"כ קריאות</div><div class="stat-emoji">📞</div></div>
-    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${sab.length}</div><div class="stat-label">חילוצים מוצלחים (סא"ב)</div><div class="stat-emoji">✅</div></div>
+    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${successfulRescueCount}</div><div class="stat-label">חילוצים מוצלחים (סא"ב)</div><div class="stat-emoji">✅</div></div>
     <div class="stat-card purple" style="animation-delay:0.14s"><div class="stat-num">${Object.keys(volunteers).length}</div><div class="stat-label">כוננים פעילים</div><div class="stat-emoji">👥</div></div>`;
 
   document.getElementById('callsBadge').textContent=`${calls.length} קריאות`;
