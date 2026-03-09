@@ -201,6 +201,12 @@ async function analyze() {
     document.getElementById('uploadScreen').style.display='none';
     document.getElementById('dashboard').style.display='block';
     renderVolDb();
+
+    // טען גם את הצ'אט המלא כדי שתהיה היסטוריה ב"צפה בשיחה"
+    if (!rawText && typeof readFile === 'function') {
+      readFile('panther-chat.txt').then(t=>{ if(t) rawText=t; }).catch(()=>{});
+    }
+
     startLiveSync();
     return;
   }
