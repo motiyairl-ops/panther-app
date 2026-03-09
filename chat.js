@@ -52,7 +52,7 @@ function renderChatFromContext(c) {
   const callMsgIdx = msgs.findIndex(m => {
     if (m.dateStr !== c.date) return false;
     const [mh, mm] = m.timeStr.split(':').map(Number);
-    return Math.abs(mh * 60 + mm - callMins) <= 2;
+    return Math.abs(mh * 60 + mm - callMins) <= 2 && CALL_MSG_RE.test(m.body.trim());
   }) ?? 0;
 
   // קריאה מזוהה לפי פורמט ה-body בלבד
@@ -165,7 +165,7 @@ function openChatViewer(callIndex) {
   const callMsgIdx = allMsgs.findIndex(m => {
     if (m.dateStr !== c.date) return false;
     const [mh, mm] = m.timeStr.split(':').map(Number);
-    return Math.abs(mh * 60 + mm - callMins) <= 2;
+    return Math.abs(mh * 60 + mm - callMins) <= 2 && CALL_MSG_RE.test(m.body.trim());
   });
   if (callMsgIdx < 0) {
     // נסה rawContext מה-DB
