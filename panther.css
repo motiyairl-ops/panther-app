@@ -397,9 +397,9 @@ main { max-width:1080px; margin:0 auto; padding:24px 20px; }
 }
 
 /* CHAT VIEWER MODAL */
-.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; overflow:visible; touch-action:pan-y; }
+.chat-modal { max-width:580px; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; }
 .chat-modal .modal-header { flex-shrink:0; }
-.chat-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; padding:16px; background:#e5ddd5; min-height:0; }
+.chat-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:16px; background:#e5ddd5; min-height:0; }
 .chat-bubble-wrap { display:flex; margin-bottom:10px; }
 .chat-bubble { max-width:80%; padding:8px 12px; border-radius:10px; font-size:13px; line-height:1.5; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 .chat-bubble.incoming { background:white; border-radius:0 10px 10px 10px; }

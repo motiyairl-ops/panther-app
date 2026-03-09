@@ -46,28 +46,17 @@ function renderChatFromContext(c) {
   }
   if (cur) msgs.push(cur);
 
-  // מצא את הודעת הקריאה — העדף הודעת מוקד, ואם לא נמצאה חזור לחיפוש זמן רגיל
+  // מצא את הודעת הקריאה לפי שעה ±2 דקות
   const [callH, callM] = c.time.split(':').map(Number);
   const callMins = callH * 60 + callM;
+  const callMsgIdx = msgs.findIndex(m => {
+    if (m.dateStr !== c.date) return false;
+    const [mh, mm] = m.timeStr.split(':').map(Number);
+    return Math.abs(mh * 60 + mm - callMins) <= 2;
+  }) ?? 0;
 
   // קריאה מזוהה לפי פורמט ה-body בלבד
   const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
-
-  let callMsgIdx = msgs.findIndex(m => {
-    if (m.dateStr !== c.date) return false;
-    const [mh, mm] = m.timeStr.split(':').map(Number);
-    return CALL_MSG_RE.test(m.body.trim()) && Math.abs(mh * 60 + mm - callMins) <= 2;
-  });
-
-  if (callMsgIdx < 0) {
-    callMsgIdx = msgs.findIndex(m => {
-      if (m.dateStr !== c.date) return false;
-      const [mh, mm] = m.timeStr.split(':').map(Number);
-      return Math.abs(mh * 60 + mm - callMins) <= 2;
-    });
-  }
-
-  if (callMsgIdx < 0) callMsgIdx = 0;
 
   let html = '';
   let lastDate = '';
@@ -125,13 +114,13 @@ function renderChatFromContext(c) {
   document.getElementById('chatBody').innerHTML = html || '<div style="color:var(--text-muted);text-align:center;padding:20px;">אין הודעות</div>';
   document.getElementById('chatOverlay').classList.add('open');
 
-  // Scroll לקריאה — גלילה בתוך chatBody עצמו (יציב יותר במובייל)
+  // Scroll לקריאה — גלילה בתוך chatBody עצמו
   setTimeout(() => {
     const target = document.getElementById(`ctxmsg-${callMsgIdx}`);
     const chatBodyEl = document.getElementById('chatBody');
     if (target && chatBodyEl) {
-      const targetTop = target.offsetTop - Math.max(24, (chatBodyEl.clientHeight * 0.35));
-      chatBodyEl.scrollTop = Math.max(0, targetTop);
+      const targetTop = Math.max(0, target.offsetTop - 120);
+      chatBodyEl.scrollTop = targetTop;
       target.style.outline = '2px solid var(--orange)';
       target.style.borderRadius = '6px';
       setTimeout(() => { target.style.outline = ''; }, 2500);
@@ -170,27 +159,18 @@ function openChatViewer(callIndex) {
   }
   if (cur) allMsgs.push(cur);
 
-  // Find the call message — העדף הודעת מוקד, ואם לא נמצאה חזור לחיפוש זמן רגיל
+  // Find the call message — חיפוש גמיש: תאריך מדויק + שעה ±2 דקות
   const [callH, callM] = c.time.split(':').map(Number);
   const callMins = callH * 60 + callM;
   const callTotalMins = callH * 60 + callM;
   const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
-
-  let callMsgIdx = allMsgs.findIndex(m => {
+  const callMsgIdx = allMsgs.findIndex(m => {
     if (m.dateStr !== c.date) return false;
     const [mh, mm] = m.timeStr.split(':').map(Number);
-    return CALL_MSG_RE.test(m.body.trim()) && Math.abs(mh * 60 + mm - callMins) <= 2;
+    return Math.abs(mh * 60 + mm - callMins) <= 2;
   });
-
   if (callMsgIdx < 0) {
-    callMsgIdx = allMsgs.findIndex(m => {
-      if (m.dateStr !== c.date) return false;
-      const [mh, mm] = m.timeStr.split(':').map(Number);
-      return Math.abs(mh * 60 + mm - callMins) <= 2;
-    });
-  }
-
-  if (callMsgIdx < 0) {
+    // fallback – פתח את כל ההיסטוריה בלי context
     callMsgIdx = 0;
   }
 
@@ -251,13 +231,13 @@ function openChatViewer(callIndex) {
   document.getElementById('chatBody').innerHTML = html;
   document.getElementById('chatOverlay').classList.add('open');
 
-  // Scroll to call message — גלילה בתוך chatBody עצמו (יציב יותר במובייל)
+  // Scroll to call message — גלילה בתוך chatBody עצמו
   setTimeout(() => {
     const target = document.getElementById(`chatmsg-${callMsgIdx}`);
     const chatBodyEl = document.getElementById('chatBody');
     if (target && chatBodyEl) {
-      const targetTop = target.offsetTop - Math.max(24, (chatBodyEl.clientHeight * 0.35));
-      chatBodyEl.scrollTop = Math.max(0, targetTop);
+      const targetTop = Math.max(0, target.offsetTop - 120);
+      chatBodyEl.scrollTop = targetTop;
       target.style.outline = '2px solid var(--orange)';
       target.style.borderRadius = '6px';
       setTimeout(() => { target.style.outline = ''; }, 2500);
