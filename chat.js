@@ -46,17 +46,28 @@ function renderChatFromContext(c) {
   }
   if (cur) msgs.push(cur);
 
-  // מצא את הודעת הקריאה לפי שעה ±2 דקות
+  // מצא את הודעת הקריאה — העדף הודעת מוקד, ואם לא נמצאה חזור לחיפוש זמן רגיל
   const [callH, callM] = c.time.split(':').map(Number);
   const callMins = callH * 60 + callM;
-  const callMsgIdx = msgs.findIndex(m => {
-    if (m.dateStr !== c.date) return false;
-    const [mh, mm] = m.timeStr.split(':').map(Number);
-    return Math.abs(mh * 60 + mm - callMins) <= 2;
-  }) ?? 0;
 
   // קריאה מזוהה לפי פורמט ה-body בלבד
   const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
+
+  let callMsgIdx = msgs.findIndex(m => {
+    if (m.dateStr !== c.date) return false;
+    const [mh, mm] = m.timeStr.split(':').map(Number);
+    return CALL_MSG_RE.test(m.body.trim()) && Math.abs(mh * 60 + mm - callMins) <= 2;
+  });
+
+  if (callMsgIdx < 0) {
+    callMsgIdx = msgs.findIndex(m => {
+      if (m.dateStr !== c.date) return false;
+      const [mh, mm] = m.timeStr.split(':').map(Number);
+      return Math.abs(mh * 60 + mm - callMins) <= 2;
+    });
+  }
+
+  if (callMsgIdx < 0) callMsgIdx = 0;
 
   let html = '';
   let lastDate = '';
@@ -159,18 +170,27 @@ function openChatViewer(callIndex) {
   }
   if (cur) allMsgs.push(cur);
 
-  // Find the call message — חיפוש גמיש: תאריך מדויק + שעה ±2 דקות
+  // Find the call message — העדף הודעת מוקד, ואם לא נמצאה חזור לחיפוש זמן רגיל
   const [callH, callM] = c.time.split(':').map(Number);
   const callMins = callH * 60 + callM;
   const callTotalMins = callH * 60 + callM;
   const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
+
   let callMsgIdx = allMsgs.findIndex(m => {
     if (m.dateStr !== c.date) return false;
     const [mh, mm] = m.timeStr.split(':').map(Number);
-    return Math.abs(mh * 60 + mm - callMins) <= 2;
+    return CALL_MSG_RE.test(m.body.trim()) && Math.abs(mh * 60 + mm - callMins) <= 2;
   });
+
   if (callMsgIdx < 0) {
-    // fallback – פתח את כל ההיסטוריה בלי context
+    callMsgIdx = allMsgs.findIndex(m => {
+      if (m.dateStr !== c.date) return false;
+      const [mh, mm] = m.timeStr.split(':').map(Number);
+      return Math.abs(mh * 60 + mm - callMins) <= 2;
+    });
+  }
+
+  if (callMsgIdx < 0) {
     callMsgIdx = 0;
   }
 
