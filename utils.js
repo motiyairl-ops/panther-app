@@ -314,7 +314,6 @@ function renderDashboard(s,e) {
   });
 
   const sab=calls.filter(c=>c.status==='sab');
-  const successfulRescueCount = Object.values(volunteers).reduce((sum, v) => sum + (v.count || 0), 0);
 
   // Dynamic section title based on date range
   const daysDiff = (s && e) ? Math.round((new Date(e)-new Date(s))/(1000*60*60*24))+1 : 0;
@@ -328,8 +327,8 @@ function renderDashboard(s,e) {
 
   document.getElementById('statsRow').innerHTML=`
     <div class="stat-card" style="animation-delay:0s"><div class="stat-num">${calls.length}</div><div class="stat-label">סה"כ קריאות</div><div class="stat-emoji">📞</div></div>
-    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${successfulRescueCount}</div><div class="stat-label">חילוצים מוצלחים (סא"ב)</div><div class="stat-emoji">✅</div></div>
-    <div class="stat-card purple" style="animation-delay:0.14s"><div class="stat-num">${Object.keys(volunteers).length}</div><div class="stat-label">כוננים פעילים</div><div class="stat-emoji">👥</div></div>`;
+    <div class="stat-card green" style="animation-delay:0.07s"><div class="stat-num">${sab.length}</div><div class="stat-label">חילוצים מוצלחים (סא"ב)</div><div class="stat-emoji">✅</div></div>
+    <div class="stat-card purple" style="animation-delay:0.14s"><div class="stat-num">${cancelled.length}</div><div class="stat-label">קריאות שבוטלו</div><div class="stat-emoji">🚫</div></div>`;
 
   document.getElementById('callsBadge').textContent=`${calls.length} קריאות`;
   document.getElementById('callsList').innerHTML = calls.length
@@ -542,13 +541,15 @@ function editCancelReason(callIndex) {
 
 function manualCancel(callIndex) {
   manualStatuses[callIndex] = 'cancelled';
-  manualNotes[callIndex] = manualNotes[callIndex] || 'בוטל ידנית';
-  delete manualAssignments[callIndex];
-  addChangeLog(callIndex, 'ביטול קריאה');
+  addChangeLog(callIndex, 'בוטל ידנית');
   saveAll();
   showSyncNotice();
-  const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
-  renderDashboard(s,e);
+  const s = document.getElementById('weekStart').value;
+  const e = document.getElementById('weekEnd').value;
+  if (rawText) {
+    parsedData = parseWhatsApp(rawText, s ? localDate(s) : null, e ? localDate(e) : null);
+  }
+  renderDashboard(s, e);
 }
 
 function manualUncancel(callIndex) {
@@ -556,8 +557,12 @@ function manualUncancel(callIndex) {
   addChangeLog(callIndex, 'שחרור ביטול');
   saveAll();
   showSyncNotice();
-  const s=document.getElementById('weekStart').value, e=document.getElementById('weekEnd').value;
-  renderDashboard(s,e);
+  const s = document.getElementById('weekStart').value;
+  const e = document.getElementById('weekEnd').value;
+  if (rawText) {
+    parsedData = parseWhatsApp(rawText, s ? localDate(s) : null, e ? localDate(e) : null);
+  }
+  renderDashboard(s, e);
 }
 
 function openAssign(callIndex) {
