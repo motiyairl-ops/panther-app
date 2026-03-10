@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>לוח בקרה – יחידת פנתר ידידים</title>
-<script>window.APP_VERSION = 'v162';</script>
+<script>window.APP_VERSION = 'v163';</script>
 <link rel="apple-touch-icon" href="icon.jpg">
 <link rel="icon" href="icon.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -305,6 +305,17 @@
 
 
 
+<!-- CHANGELOG MODAL -->
+<div id="changelogOverlay" class="modal-overlay" onclick="if(event.target===this) closeChangelog()">
+  <div class="modal changelog-modal">
+    <div class="modal-header">
+      <div class="modal-title">היסטוריית שינויים</div>
+      <button class="modal-close" onclick="closeChangelog()">✕</button>
+    </div>
+    <div id="changelogBody" class="modal-body"></div>
+  </div>
+</div>
+
 <script>
 (function () {
   function applyAppVersion() {
@@ -325,15 +336,5 @@
 <script src="chat.js"></script>
 <script src="drive.js"></script>
 <script src="utils.js"></script>
+</body>
 </html>
-
-<!-- CHANGELOG MODAL -->
-<div id="changelogOverlay" class="overlay">
-  <div class="modal changelog-modal">
-    <div class="modal-header">
-      <div class="modal-title">היסטוריית שינויים</div>
-      <button class="modal-close" onclick="closeChangelog()">✕</button>
-    </div>
-    <div id="changelogBody" class="modal-body"></div>
-  </div>
-</div>
