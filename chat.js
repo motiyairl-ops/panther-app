@@ -51,46 +51,41 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-function formatChatBody(text) {
-  return escapeHtml(text)
-    .replace(/\*(.*?)\*/g, "<strong>$1</strong>")
-    .replace(/התמונה הושמטה/g, "📷")
-    .replace(/המדיה לא נכללה/g, "📷")
-    .replace(/הודעה זו נמחקה/g, "🗑️ נמחק")
-    .replace(
-      /&lt;ההודעה נערכה&gt;/g,
-      '<span style="color:#999;font-size:10px;"> ✏️</span>',
-    )
-    .trim();
+function normalizeExportDate(day, month, year, isAndroid) {
+  let y = parseInt(year, 10);
+  if (isAndroid && y < 100) y += 2000;
+  return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${String(y)}`;
 }
 
-function parseWhatsAppMessages(text) {
+function parseWhatsAppMessagesForViewer(text) {
   const lines = String(text || "")
-    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "")
     .split("\n");
+
   const iosRe =
-    /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):(\d{2})\] ([^:]+): ([\s\S]*)/;
+    /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}),\s*(\d{1,2}):(\d{2})(?::\d{2})?\]\s*([^:]+):\s*([\s\S]*)/;
   const andReSlash =
     /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([^:]+):\s*([\s\S]*)/;
   const andReDots =
-    /^(\d{1,2})\.(\d{1,2})\.(\d{2,4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([^:]+):\s*([\s\S]*)/;
+    /^(\d{1,2})\.(\d{1,2})\.(\d{4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([^:]+):\s*([\s\S]*)/;
 
-  const systemReIOS =
-    /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}), (\d{1,2}):(\d{2}):(\d{2})\]\s*([\s\S]*)/;
-  const systemReAndSlash =
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([\s\S]*)/;
-  const systemReAndDots =
-    /^(\d{1,2})\.(\d{1,2})\.(\d{2,4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([\s\S]*)/;
+  const iosSystemRe =
+    /^\[(\d{1,2})\.(\d{1,2})\.(\d{4}),\s*(\d{1,2}):(\d{2})(?::\d{2})?\]\s*([\s\S]+)$/;
+  const andSystemSlashRe =
+    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([\s\S]+)$/;
+  const andSystemDotsRe =
+    /^(\d{1,2})\.(\d{1,2})\.(\d{4}),\s*(\d{1,2}):(\d{2})\s*[-–]\s*([\s\S]+)$/;
 
-  const msgs = [];
+  const messages = [];
   let cur = null;
 
   const pushCur = () => {
     if (!cur) return;
+    cur.sender = String(cur.sender || "")
+      .replace(/^~\s*/, "")
+      .trim();
     cur.body = String(cur.body || "").trim();
-    cur.sender = String(cur.sender || "").trim();
-    cur.systemText = String(cur.systemText || "").trim();
-    msgs.push(cur);
+    messages.push(cur);
     cur = null;
   };
 
@@ -99,6 +94,8 @@ function parseWhatsAppMessages(text) {
 
     let m = iosRe.exec(line);
     let isAndroid = false;
+    let isSystem = false;
+
     if (!m) {
       m = andReSlash.exec(line);
       isAndroid = !!m;
@@ -110,146 +107,145 @@ function parseWhatsAppMessages(text) {
 
     if (m) {
       pushCur();
-      let y = parseInt(m[3], 10);
-      if (isAndroid && y < 100) y += 2000;
       cur = {
-        type: "message",
-        dateStr: `${m[1].padStart(2, "0")}.${m[2].padStart(2, "0")}.${String(y)}`,
-        timeStr: `${m[4].padStart(2, "0")}:${m[5]}`,
-        sender: m[6].replace(/^~ /, "").trim(),
-        body: m[7].trim(),
-        systemText: "",
+        dateStr: normalizeExportDate(m[1], m[2], m[3], isAndroid),
+        timeStr: `${String(m[4]).padStart(2, "0")}:${m[5]}`,
+        sender: m[6],
+        body: m[7],
+        isSystem: false,
       };
       continue;
     }
 
-    let sys = systemReIOS.exec(line);
+    m = iosSystemRe.exec(line);
     isAndroid = false;
-    if (!sys) {
-      sys = systemReAndSlash.exec(line);
-      isAndroid = !!sys;
+    if (!m) {
+      m = andSystemSlashRe.exec(line);
+      isAndroid = !!m;
     }
-    if (!sys) {
-      sys = systemReAndDots.exec(line);
-      isAndroid = !!sys;
+    if (!m) {
+      m = andSystemDotsRe.exec(line);
+      isAndroid = !!m;
     }
 
-    if (sys) {
+    if (m) {
       pushCur();
-      let y = parseInt(sys[3], 10);
-      if (isAndroid && y < 100) y += 2000;
+      isSystem = true;
       cur = {
-        type: "system",
-        dateStr: `${sys[1].padStart(2, "0")}.${sys[2].padStart(2, "0")}.${String(y)}`,
-        timeStr: `${sys[4].padStart(2, "0")}:${sys[5]}`,
+        dateStr: normalizeExportDate(m[1], m[2], m[3], isAndroid),
+        timeStr: `${String(m[4]).padStart(2, "0")}:${m[5]}`,
         sender: "",
-        body: "",
-        systemText: sys[6].trim(),
+        body: m[6],
+        isSystem,
       };
       continue;
     }
 
     if (cur) {
-      if (cur.type === "system") cur.systemText += "\n" + line;
-      else cur.body += "\n" + line;
+      cur.body += `\n${line}`;
     }
   }
 
   pushCur();
-  return msgs;
+  return messages;
 }
 
-function normalizeSystemText(msg) {
-  if (!msg) return "";
-  const raw = String(msg.systemText || msg.body || "").trim();
-  if (!raw) return "";
-
-  let text = raw
-    .replace(/^~\s*/, "")
-    .replace(/^\u200f|\u200e/g, "")
-    .replace(/\*/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  text = text.replace(/\bיצא\/ה\b/g, "יצא");
-  text = text.replace(/\bהצטרף\/ה\b/g, "הצטרף");
-  text = text.replace(/\bעזב\/ה\b/g, "עזב");
-  text = text.replace(/\bהוסר\/ה\b/g, "הוסר");
-  text = text.replace(/\bהוסרו\/ה\b/g, "הוסרו");
-
-  return text;
-}
-
-function isSystemMessage(msg) {
+function isSystemMessageForViewer(msg) {
   if (!msg) return false;
-  if (msg.type === "system") return true;
+  if (msg.isSystem) return true;
 
   const sender = String(msg.sender || "").trim();
   const body = String(msg.body || "").trim();
 
-  if (!sender && body) return true;
-  if (/^~\s*/.test(body)) return true;
-  if (/^[\u202a\u202c+0-9\s-]{7,}$/.test(sender)) return true;
-
   const systemSenderRe =
-    /הסיר\/?ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/?ה את|שינה\/?תה את|שינה את|שינתה את|added|removed|left|joined/i;
+    /הסיר\/ה את|הצטרף|הצטרפה|עזב|עזבה|צירף\/ה את|שינה\/תה את|שינה את|שינתה את|added|removed|left|joined/i;
   const systemBodyRe =
-    /^[\u200f\u200e~\s]*[^\s:]{2,}[\s\u200f\u200e]*(יצא\/?ה|הצטרף\/?ה|עזב\/?ה|יצא$|יצאה$|הצטרף$|הצטרפה$|עזב$|עזבה$)/i;
+    /^(~\s*)?.{1,80}(יצא\/ה|הצטרף\/ה|עזב\/ה|יצא|יצאה|הצטרף|הצטרפה|עזב|עזבה|removed|left|joined|added)(\s|$)/i;
+  const phoneOnlyRe = /^[\u202a\u202c+0-9\s-]{7,}$/;
 
-  return systemSenderRe.test(sender) || systemBodyRe.test(body);
+  return (
+    !sender ||
+    phoneOnlyRe.test(sender) ||
+    systemSenderRe.test(sender) ||
+    systemBodyRe.test(body)
+  );
 }
 
-function findCallMessageIndex(msgs, call) {
-  if (!Array.isArray(msgs) || !call) return 0;
-  const [callH, callM] = String(call.time || "00:00")
+function formatMessageBodyForViewer(text) {
+  let html = escapeHtml(text)
+    .replace(/\*(.*?)\*/g, "<strong>$1</strong>")
+    .replace(/התמונה הושמטה/g, "📷")
+    .replace(/המדיה לא נכללה/g, "📷")
+    .replace(/הודעה זו נמחקה/g, "🗑️ נמחק")
+    .replace(
+      /&lt;ההודעה נערכה&gt;/g,
+      '<span style="color:#999;font-size:10px;"> ✏️</span>',
+    );
+
+  return html.trim();
+}
+
+function findCallMessageIndex(messages, c) {
+  const [callH, callM] = String(c.time || "00:00")
     .split(":")
     .map(Number);
-  const callMins = (callH || 0) * 60 + (callM || 0);
+  const callMins = callH * 60 + callM;
+  const callDate = c.date;
+  const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
 
-  let idx = msgs.findIndex((m) => {
-    if (m.dateStr !== call.date || m.type === "system") return false;
+  let idx = messages.findIndex((m) => {
+    if (m.dateStr !== callDate) return false;
     const [mh, mm] = String(m.timeStr || "00:00")
       .split(":")
       .map(Number);
-    return Math.abs((mh || 0) * 60 + (mm || 0) - callMins) <= 2;
+    return (
+      Math.abs(mh * 60 + mm - callMins) <= 2 &&
+      CALL_MSG_RE.test(String(m.body || "").trim())
+    );
   });
 
   if (idx >= 0) return idx;
 
-  idx = msgs.findIndex((m) => m.dateStr === call.date && m.type !== "system");
+  idx = messages.findIndex((m) => {
+    if (m.dateStr !== callDate) return false;
+    const [mh, mm] = String(m.timeStr || "00:00")
+      .split(":")
+      .map(Number);
+    return Math.abs(mh * 60 + mm - callMins) <= 2;
+  });
+
   return idx >= 0 ? idx : 0;
 }
 
-function renderChatMessages(msgs, call) {
-  document.getElementById("chatModalTitle").textContent = `📍 ${call.location}`;
+function renderChatMessages(messages, c, callMsgIdx, idPrefix) {
+  document.getElementById("chatModalTitle").textContent = `📍 ${c.location}`;
   document.getElementById("chatModalSub").textContent =
-    `${call.date} · ${call.time} · מרחב ${call.region}`;
+    `${c.date} · ${c.time} · מרחב ${c.region}`;
 
-  const callMsgIdx = findCallMessageIndex(msgs, call);
   const CALL_MSG_RE = /^\*מוקד\s*(ארצי|מרחב|צפון|אצרצי)/i;
-
   let html = "";
   let lastDate = "";
 
-  msgs.forEach((msg, idx) => {
+  messages.forEach((msg, idx) => {
     if (msg.dateStr !== lastDate) {
       lastDate = msg.dateStr;
       html += `<div style="text-align:center;margin:10px 0;"><span style="background:rgba(0,0,0,0.12);color:#555;font-size:11px;padding:3px 10px;border-radius:10px;">${escapeHtml(msg.dateStr)}</span></div>`;
     }
 
-    if (isSystemMessage(msg)) {
-      const sysText = normalizeSystemText(msg);
-      if (sysText) {
-        html += `<div id="chatmsg-${idx}" style="text-align:center;margin:10px 0;"><span style="background:#e9edf3;color:#555;font-size:12px;padding:5px 14px;border-radius:999px;display:inline-block;">${escapeHtml(sysText)}</span></div>`;
-      }
+    if (isSystemMessageForViewer(msg)) {
+      const sender = String(msg.sender || "").trim();
+      const body = String(msg.body || "")
+        .replace(/\*/g, "")
+        .trim();
+      const sysText = [sender, body].filter(Boolean).join(" ").trim();
+      html += `<div style="text-align:center;margin:8px 0;"><span style="background:#e9edf3;color:#555;font-size:12px;padding:4px 12px;border-radius:10px;display:inline-block;">${escapeHtml(sysText)}</span></div>`;
       return;
     }
 
-    const bodyText = String(msg.body || "").trim();
     const isCallMsg = idx === callMsgIdx;
-    const isBlueMsg = CALL_MSG_RE.test(bodyText);
-    const cleanBody = formatChatBody(bodyText);
-    const senderClean = escapeHtml(cleanName(msg.sender));
+    const isBlueMsg = CALL_MSG_RE.test(String(msg.body || "").trim());
+    const senderClean = cleanName(msg.sender || "");
+    const cleanBody = formatMessageBodyForViewer(msg.body || "");
 
     const bubbleStyle = isBlueMsg
       ? "background:#dbeeff;border-radius:10px 0 10px 10px;margin-right:auto;margin-left:20px;border-right:3px solid #1a73e8;"
@@ -260,9 +256,9 @@ function renderChatMessages(msgs, call) {
     const senderColor = isBlueMsg ? "#1a73e8" : "var(--orange)";
     const senderPrefix = isCallMsg ? "📞 קריאה – " : "";
 
-    html += `<div id="chatmsg-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${align}">
+    html += `<div id="${idPrefix}-${idx}" style="display:flex;flex-direction:column;margin-bottom:8px;${align}">
       <div style="max-width:82%;padding:8px 12px;${bubbleStyle}box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        <div style="font-size:11px;font-weight:700;color:${senderColor};margin-bottom:3px;">${senderPrefix}${senderClean}</div>
+        <div style="font-size:11px;font-weight:700;color:${senderColor};margin-bottom:3px;">${senderPrefix}${escapeHtml(senderClean)}</div>
         <div style="font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${cleanBody}</div>
         <div style="font-size:10px;color:#999;text-align:left;margin-top:3px;">${escapeHtml(msg.timeStr)}</div>
       </div>
@@ -276,7 +272,7 @@ function renderChatMessages(msgs, call) {
   document.getElementById("chatOverlay").classList.add("open");
 
   setTimeout(() => {
-    const target = document.getElementById(`chatmsg-${callMsgIdx}`);
+    const target = document.getElementById(`${idPrefix}-${callMsgIdx}`);
     const chatBodyEl = document.getElementById("chatBody");
     if (target && chatBodyEl) {
       const targetTop = Math.max(0, target.offsetTop - 120);
@@ -291,12 +287,49 @@ function renderChatMessages(msgs, call) {
 }
 
 function renderChatFromContext(c) {
-  const msgs = parseWhatsAppMessages(c?.rawContext || "");
-  renderChatMessages(msgs, c);
+  const msgs = parseWhatsAppMessagesForViewer(c.rawContext || "");
+  const callMsgIdx = findCallMessageIndex(msgs, c);
+  renderChatMessages(msgs, c, callMsgIdx, "ctxmsg");
 }
 
-function openChatViewer(callIndex) {
+async function ensureFullChatTextLoaded() {
+  const currentRaw = typeof rawText === "string" ? rawText.trim() : "";
+  if (currentRaw.length > 0) return currentRaw;
+
+  if (typeof readFile === "function") {
+    try {
+      const driveText = await readFile("panther-chat.txt");
+      if (driveText && String(driveText).trim()) {
+        rawText = String(driveText);
+        return rawText;
+      }
+    } catch (err) {
+      console.warn("Failed loading full chat from Drive", err);
+    }
+  }
+
+  return "";
+}
+
+async function openChatViewer(callIndex) {
   const c = parsedData.calls[callIndex];
+  if (!c) return;
+
+  let fullText = await ensureFullChatTextLoaded();
+
+  // אם יש rawText חשוד/חלקי, ו-Drive זמין — נסה לרענן מהקובץ השלם
+  if (typeof readFile === "function" && (!fullText || fullText.length < 5000)) {
+    try {
+      const refreshed = await readFile("panther-chat.txt");
+      if (refreshed && String(refreshed).trim()) {
+        rawText = String(refreshed);
+        fullText = rawText;
+      }
+    } catch (err) {
+      console.warn("Failed refreshing full chat from Drive", err);
+    }
+  }
+
   console.log(
     "[openChatViewer] call:",
     c?.date,
@@ -304,22 +337,17 @@ function openChatViewer(callIndex) {
     "rawContext len:",
     c?.rawContext?.length,
     "rawText len:",
-    rawText?.length,
+    fullText?.length,
   );
 
-  if (!c) {
-    alert("לא נמצאה קריאה");
+  if (!fullText) {
+    renderChatFromContext(c);
     return;
   }
 
-  const sourceText = rawText || c?.rawContext || "";
-  if (!sourceText) {
-    alert("לא נמצא קובץ שיחה");
-    return;
-  }
-
-  const msgs = parseWhatsAppMessages(sourceText);
-  renderChatMessages(msgs, c);
+  const allMsgs = parseWhatsAppMessagesForViewer(fullText);
+  const callMsgIdx = findCallMessageIndex(allMsgs, c);
+  renderChatMessages(allMsgs, c, callMsgIdx, "chatmsg");
 }
 
 function closeChatModal(e) {
