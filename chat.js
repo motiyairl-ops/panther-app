@@ -315,18 +315,18 @@ async function openChatViewer(callIndex) {
   const c = parsedData.calls[callIndex];
   if (!c) return;
 
-  let fullText = await ensureFullChatTextLoaded();
+  let fullText = typeof rawText === "string" ? rawText.trim() : "";
 
-  // אם יש rawText חשוד/חלקי, ו-Drive זמין — נסה לרענן מהקובץ השלם
-  if (typeof readFile === "function" && (!fullText || fullText.length < 5000)) {
+  // טען מה-Drive רק אם אין בכלל rawText בזיכרון
+  if (!fullText && typeof readFile === "function") {
     try {
-      const refreshed = await readFile("panther-chat.txt");
-      if (refreshed && String(refreshed).trim()) {
-        rawText = String(refreshed);
-        fullText = rawText;
+      const driveText = await readFile("panther-chat.txt");
+      if (driveText && String(driveText).trim()) {
+        rawText = String(driveText);
+        fullText = rawText.trim();
       }
     } catch (err) {
-      console.warn("Failed refreshing full chat from Drive", err);
+      console.warn("Failed loading full chat from Drive", err);
     }
   }
 
